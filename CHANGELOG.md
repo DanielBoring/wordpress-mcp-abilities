@@ -6,6 +6,8 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 
 ## Unreleased
 
+## 2.4.1
+
 ### Changed
 
 - Hardened post, page, custom post type, media, and SEO score list abilities so returned items and totals only include objects the caller can access for the requested status, including private and trashed content.

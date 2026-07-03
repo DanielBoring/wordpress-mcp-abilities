@@ -4,7 +4,7 @@ Tags: mcp, ai, automation, content-management, artificial-intelligence
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://paypal.me/VirtuallyBoring
@@ -87,7 +87,7 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 
 == Changelog ==
 
-= Unreleased =
+= 2.4.1 =
 * Harden permission callbacks and per-object filtering for posts, pages, custom post types, media, SEO score lists, plugin activation/deactivation, and runtime environment details.
 * Require publish capabilities for private/scheduled/published status changes and bulk publishing.
 * Reduce sensitive identity and fingerprinting fields in low-privilege responses.
@@ -119,7 +119,7 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 
 == Upgrade Notice ==
 
-= Unreleased =
+= 2.4.1 =
 Permission hardening reduces low-privilege visibility into private/trash content, runtime versions, and sensitive identity fields. Use Administrator credentials for environment details and plugin management.
 
 = 2.4.0 =
