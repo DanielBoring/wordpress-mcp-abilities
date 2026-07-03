@@ -388,9 +388,7 @@ class Webmastery_MCP_Plugins {
 	}
 
 	private static function normalize_plugin( $plugin, $plugin_data ) {
-		// Read-only status reporting; this does not modify WordPress update routines.
 		$updates        = self::get_update_plugins_transient();
-		$auto_updates   = (array) get_site_option( 'auto_update_plugins', [] );
 		$network_active = is_multisite() && is_plugin_active_for_network( $plugin );
 
 		return [
@@ -399,7 +397,6 @@ class Webmastery_MCP_Plugins {
 			'version'          => $plugin_data['Version'] ?? '',
 			'active'           => is_plugin_active( $plugin ),
 			'network_active'   => $network_active,
-			'auto_update'      => in_array( $plugin, $auto_updates, true ),
 			'update_available' => isset( $updates->response[ $plugin ] ),
 		];
 	}

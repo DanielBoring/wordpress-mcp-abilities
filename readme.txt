@@ -89,6 +89,7 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 
 = 2.4.1 =
 * Harden permission callbacks and per-object filtering for posts, pages, custom post types, media, SEO score lists, plugin activation/deactivation, and runtime environment details.
+* Remove plugin auto-update status from plugin responses to avoid Plugin Check updater-detection warnings.
 * Require publish capabilities for private/scheduled/published status changes and bulk publishing.
 * Reduce sensitive identity and fingerprinting fields in low-privilege responses.
 
