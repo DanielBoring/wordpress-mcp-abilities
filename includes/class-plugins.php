@@ -273,7 +273,7 @@ class Webmastery_MCP_Plugins {
 				],
 			],
 			'execute_callback'    => [ self::class, 'activate_plugin' ],
-			'permission_callback' => '__return_true',
+			'permission_callback' => [ self::class, 'permission' ],
 			'meta'                => [
 				'annotations' => [ 'readonly' => false, 'destructive' => false, 'idempotent' => true ],
 				'mcp'         => [ 'public' => true, 'type' => 'tool' ],
@@ -296,7 +296,7 @@ class Webmastery_MCP_Plugins {
 				],
 			],
 			'execute_callback'    => [ self::class, 'deactivate_plugin' ],
-			'permission_callback' => '__return_true',
+			'permission_callback' => [ self::class, 'permission' ],
 			'meta'                => [
 				'annotations' => [ 'readonly' => false, 'destructive' => true, 'idempotent' => true ],
 				'mcp'         => [ 'public' => true, 'type' => 'tool' ],

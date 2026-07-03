@@ -8,6 +8,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Added
 
+- Added E2E manifest fixtures and missing-path assertions for permission hardening coverage, including filtered private/trash list results and sensitive identity-field absence checks.
 - Added a five-layer QA strategy guide, PHPUnit/PHPStan QA commands, unit-test scaffolding, and separate GitHub Actions lanes for Static QA, Unit Tests, Ability Contract QA, Full MCP E2E QA, and Release Package QA.
 - Added environment-specific QA notes for GitHub Actions, Windows PowerShell, and Windows Git Bash.
 - Added secondary in-depth E2E CRUD QA that exercises real MCP Adapter HTTP JSON-RPC sessions against the default server.

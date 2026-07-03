@@ -154,12 +154,68 @@ class Webmastery_MCP_Custom_Post_Types {
 			'url'               => get_permalink( $post->ID ),
 			'author'            => (int) $post->post_author,
 			'author_name'       => get_the_author_meta( 'display_name', (int) $post->post_author ),
-			'author_login'      => get_the_author_meta( 'user_login', (int) $post->post_author ),
 			'date_created'      => $post->post_date,
 			'date_modified'     => $post->post_modified,
 			'type'              => $post->post_type,
 			'featured_image_id' => (int) get_post_thumbnail_id( $post->ID ),
 			'taxonomy_terms'    => $taxonomy_terms,
+		];
+	}
+
+	private static function can_read_full_post( $post_type_object, $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) {
+			return false;
+		}
+
+		if ( 'private' === $post->post_status ) {
+			return current_user_can( self::cap( $post_type_object, 'read_post' ), $post->ID );
+		}
+
+		if ( 'publish' === $post->post_status ) {
+			return current_user_can( self::cap( $post_type_object, 'read_post' ), $post->ID );
+		}
+
+		if ( 'trash' === $post->post_status ) {
+			return current_user_can( self::cap( $post_type_object, 'delete_post' ), $post->ID );
+		}
+
+		return current_user_can( self::cap( $post_type_object, 'edit_post' ), $post->ID );
+	}
+
+	private static function filter_readable_post_ids( $post_type_object, $ids ) {
+		$readable = [];
+
+		foreach ( $ids as $id ) {
+			$post = get_post( (int) $id );
+			if ( $post && self::can_read_full_post( $post_type_object, $post ) ) {
+				$readable[] = (int) $post->ID;
+			}
+		}
+
+		return $readable;
+	}
+
+	private static function query_readable_posts( $post_type_object, $args, $page, $per_page ) {
+		$count_args = array_merge(
+			$args,
+			[
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'paged'          => 1,
+				'no_found_rows'  => true,
+			]
+		);
+
+		$query        = new WP_Query( $count_args );
+		$readable_ids = self::filter_readable_post_ids( $post_type_object, $query->posts );
+		$total        = count( $readable_ids );
+		$page_ids     = array_slice( $readable_ids, ( max( 1, (int) $page ) - 1 ) * $per_page, $per_page );
+
+		return [
+			'items'       => array_values( array_filter( array_map( [ self::class, 'normalize_post' ], array_map( 'get_post', $page_ids ) ) ) ),
+			'total'       => $total,
+			'total_pages' => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
 		];
 	}
 
@@ -222,7 +278,7 @@ class Webmastery_MCP_Custom_Post_Types {
 			if ( ! current_user_can( $create_cap ) ) {
 				return new WP_Error( 'forbidden', "Requires {$create_cap} capability." );
 			}
-			if ( in_array( $status, [ 'publish', 'future' ], true ) && ! current_user_can( $publish_cap ) ) {
+			if ( in_array( $status, [ 'publish', 'private', 'future' ], true ) && ! current_user_can( $publish_cap ) ) {
 				return new WP_Error( 'forbidden', "Requires {$publish_cap} capability." );
 			}
 			if ( ! empty( $input['parent'] ) && ! current_user_can( $edit_cap, absint( $input['parent'] ) ) ) {
@@ -303,7 +359,7 @@ class Webmastery_MCP_Custom_Post_Types {
 		$properties = [
 			'title'          => [ 'type' => 'string', 'description' => 'Custom post type item title.' ],
 			'content'        => [ 'type' => 'string', 'description' => 'Custom post type item content (HTML).' ],
-			'status'         => [ 'type' => 'string', 'enum' => [ 'draft', 'publish', 'pending', 'future' ], 'default' => 'draft' ],
+			'status'         => [ 'type' => 'string', 'enum' => [ 'draft', 'publish', 'pending', 'private', 'future' ], 'default' => 'draft' ],
 			'scheduled_date' => [ 'type' => 'string', 'description' => 'ISO 8601 datetime to publish when status is future.' ],
 			'excerpt'        => [ 'type' => 'string' ],
 			'slug'           => [ 'type' => 'string' ],
@@ -438,15 +494,13 @@ class Webmastery_MCP_Custom_Post_Types {
 						$args['author'] = get_current_user_id();
 					}
 
-					$query = new WP_Query( $args );
+					$per_page = min( max( 1, (int) ( $input['per_page'] ?? 20 ) ), 100 );
+					$page     = max( 1, (int) ( $input['page'] ?? 1 ) );
+					$data     = self::query_readable_posts( $post_type_object, $args, $page, $per_page );
 
 					return [
 						'success' => true,
-						'data'    => [
-							'items'       => array_values( array_filter( array_map( [ self::class, 'normalize_post' ], $query->posts ) ) ),
-							'total'       => (int) $query->found_posts,
-							'total_pages' => (int) $query->max_num_pages,
-						],
+						'data'    => $data,
 					];
 				},
 				'permission_callback' => self::permission( $post_type_object, 'edit_posts' ),
@@ -515,7 +569,7 @@ class Webmastery_MCP_Custom_Post_Types {
 						return self::error_response( $validated_terms->get_error_code(), $validated_terms->get_error_message() );
 					}
 
-					$args                = self::sanitized_post_args( $input, [ 'draft', 'publish', 'pending', 'future' ] );
+					$args                = self::sanitized_post_args( $input, [ 'draft', 'publish', 'pending', 'private', 'future' ] );
 					$args['post_type']   = $post_type_name;
 					$args['post_status'] = $args['post_status'] ?? 'draft';
 
@@ -572,7 +626,7 @@ class Webmastery_MCP_Custom_Post_Types {
 					if ( ! current_user_can( self::cap( $post_type_object, 'edit_post' ), $id ) ) {
 						return self::error_response( 'forbidden', 'You do not have permission to update this custom post type item.' );
 					}
-					if ( isset( $input['status'] ) && in_array( $input['status'], [ 'publish', 'future' ], true ) && ! current_user_can( self::cap( $post_type_object, 'publish_posts' ) ) ) {
+					if ( isset( $input['status'] ) && in_array( $input['status'], [ 'publish', 'private', 'future' ], true ) && ! current_user_can( self::cap( $post_type_object, 'publish_posts' ) ) ) {
 						return self::error_response( 'forbidden', 'You do not have permission to publish this custom post type item.' );
 					}
 

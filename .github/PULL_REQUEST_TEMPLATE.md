@@ -13,6 +13,7 @@
 
 ## Checklist
 - [ ] Capability checks use the narrowest relevant WordPress capability and return/surface `WP_Error` on failure
+- [ ] List/query abilities filter returned objects with object/status-aware checks and do not leak unauthorized totals or sensitive identity fields
 - [ ] Inputs are sanitized or validated (`sanitize_text_field`, `sanitize_key`, `absint`, `wp_kses_post`, enum validation, or an equivalent WordPress API)
 - [ ] Ability responses follow the existing success/error shape for the affected ability group
 - [ ] New ability names use the `webmastery-site-toolkit-for-mcp/` prefix and set accurate `annotations` (`readonly`, `destructive`, `idempotent`)

@@ -10,8 +10,11 @@ $allowed_roles = array(
 	'book_manager' => true,
 	'case_manager' => true,
 	'editor'       => true,
+	'limited_book_manager' => true,
+	'limited_editor' => true,
 	'no_role'      => true,
 	'subscriber'   => true,
+	'user_lister'  => true,
 );
 
 function webmastery_mcp_manifest_fail( array $errors ): void {
@@ -89,7 +92,7 @@ foreach ( $manifest as $index => $case ) {
 		$errors[] = webmastery_mcp_manifest_path( $case_number, 'assert_values' ) . ' must be an object.';
 	}
 
-	foreach ( array( 'assert_paths', 'assert_contains', 'assert_not_contains' ) as $field ) {
+	foreach ( array( 'assert_paths', 'assert_missing_paths', 'assert_contains', 'assert_not_contains' ) as $field ) {
 		if ( array_key_exists( $field, $case ) && ! is_array( $case[ $field ] ) ) {
 			$errors[] = webmastery_mcp_manifest_path( $case_number, $field ) . ' must be an array.';
 		}

@@ -338,7 +338,6 @@ class Webmastery_MCP_Content_Hygiene {
 			'scheduled_date_gmt' => $post->post_date_gmt,
 			'author'             => (int) $post->post_author,
 			'author_name'        => get_the_author_meta( 'display_name', (int) $post->post_author ),
-			'author_login'       => get_the_author_meta( 'user_login', (int) $post->post_author ),
 		];
 	}
 }

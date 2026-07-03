@@ -41,7 +41,6 @@ class Webmastery_MCP_Posts {
 			'url'               => get_permalink( $post->ID ),
 			'author'            => (int) $post->post_author,
 			'author_name'       => get_the_author_meta( 'display_name', (int) $post->post_author ),
-			'author_login'      => get_the_author_meta( 'user_login', (int) $post->post_author ),
 			'date_created'      => $post->post_date,
 			'date_modified'     => $post->post_modified,
 			'type'              => $post->post_type,
@@ -54,6 +53,63 @@ class Webmastery_MCP_Posts {
 		}
 
 		return $data;
+	}
+
+	private static function can_read_full_post( $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) {
+			return false;
+		}
+
+		if ( 'private' === $post->post_status ) {
+			return current_user_can( 'read_post', $post->ID );
+		}
+
+		if ( 'publish' === $post->post_status ) {
+			return current_user_can( 'read_post', $post->ID );
+		}
+
+		if ( 'trash' === $post->post_status ) {
+			return current_user_can( 'delete_post', $post->ID );
+		}
+
+		return current_user_can( 'edit_post', $post->ID );
+	}
+
+	private static function filter_readable_post_ids( $ids ) {
+		$readable = [];
+
+		foreach ( $ids as $id ) {
+			$post = get_post( (int) $id );
+			if ( $post && self::can_read_full_post( $post ) ) {
+				$readable[] = (int) $post->ID;
+			}
+		}
+
+		return $readable;
+	}
+
+	private static function query_readable_posts( $args, $page, $per_page ) {
+		$count_args = array_merge(
+			$args,
+			[
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'paged'          => 1,
+				'no_found_rows'  => true,
+			]
+		);
+
+		$query        = new WP_Query( $count_args );
+		$readable_ids = self::filter_readable_post_ids( $query->posts );
+		$total        = count( $readable_ids );
+		$page_ids     = array_slice( $readable_ids, ( max( 1, (int) $page ) - 1 ) * $per_page, $per_page );
+
+		return [
+			'items'       => array_values( array_filter( array_map( [ self::class, 'normalize' ], array_map( 'get_post', $page_ids ) ) ) ),
+			'total'       => $total,
+			'total_pages' => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+		];
 	}
 
 	private static function writable_protected_meta_keys() {
@@ -517,7 +573,7 @@ class Webmastery_MCP_Posts {
 			if ( ! current_user_can( $edit_cap ) ) {
 				return new WP_Error( 'forbidden', "Requires {$edit_cap} capability." );
 			}
-			if ( in_array( $status, [ 'publish', 'future' ], true ) && ! current_user_can( $publish_cap ) ) {
+			if ( in_array( $status, [ 'publish', 'private', 'future' ], true ) && ! current_user_can( $publish_cap ) ) {
 				return new WP_Error( 'forbidden', "Requires {$publish_cap} capability." );
 			}
 			if ( 'page' === $type && ! empty( $input['parent'] ) && ! current_user_can( 'edit_post', absint( $input['parent'] ) ) ) {
@@ -723,6 +779,14 @@ class Webmastery_MCP_Posts {
 						];
 						continue;
 					}
+					if ( ! current_user_can( 'publish_posts' ) ) {
+						$failures[] = [
+							'id'      => $id,
+							'code'    => 'forbidden',
+							'message' => 'You do not have permission to publish posts.',
+						];
+						continue;
+					}
 
 					if ( 'draft' !== $post->post_status ) {
 						$failures[] = [
@@ -760,7 +824,7 @@ class Webmastery_MCP_Posts {
 
 				return self::bulk_post_summary( $ids, $successes, $failures );
 			},
-			'permission_callback' => self::permission( 'edit_posts' ),
+			'permission_callback' => self::permission( 'publish_posts' ),
 			'meta'                => [
 				'annotations' => [ 'readonly' => false, 'destructive' => false, 'idempotent' => false ],
 				'mcp'         => [ 'public' => true, 'type' => 'tool' ],
@@ -1456,7 +1520,6 @@ class Webmastery_MCP_Posts {
 			'post_id'       => (int) $revision->post_parent,
 			'author'        => (int) $revision->post_author,
 			'author_name'   => get_the_author_meta( 'display_name', (int) $revision->post_author ),
-			'author_login'  => get_the_author_meta( 'user_login', (int) $revision->post_author ),
 			'title'         => $revision->post_title,
 			'content'       => $revision->post_content,
 			'excerpt'       => $revision->post_excerpt,
@@ -1811,15 +1874,13 @@ class Webmastery_MCP_Posts {
 					$args['cat'] = absint( $input['category_id'] );
 				}
 
-				$query = new WP_Query( $args );
+				$per_page = min( max( 1, (int) ( $input['per_page'] ?? 20 ) ), 100 );
+				$page     = max( 1, (int) ( $input['page'] ?? 1 ) );
+				$data     = self::query_readable_posts( $args, $page, $per_page );
 
 				return [
 					'success' => true,
-					'data'    => [
-						'items'       => array_values( array_filter( array_map( [ self::class, 'normalize' ], $query->posts ) ) ),
-						'total'       => (int) $query->found_posts,
-						'total_pages' => (int) $query->max_num_pages,
-					],
+					'data'    => $data,
 				];
 			},
 			'permission_callback' => self::permission( 'post' === $type ? 'edit_posts' : 'edit_pages' ),
@@ -1865,7 +1926,7 @@ class Webmastery_MCP_Posts {
 		$create_props = [
 			'title'   => [ 'type' => 'string', 'description' => "{$label} title" ],
 			'content' => [ 'type' => 'string', 'description' => "{$label} content (HTML)" ],
-			'status'         => [ 'type' => 'string', 'enum' => [ 'draft', 'publish', 'pending', 'future' ], 'default' => 'draft' ],
+			'status'         => [ 'type' => 'string', 'enum' => [ 'draft', 'publish', 'pending', 'private', 'future' ], 'default' => 'draft' ],
 			'scheduled_date' => [ 'type' => 'string', 'description' => 'ISO 8601 datetime to publish (required when status is future, e.g. 2025-12-01T09:00:00)' ],
 			'excerpt'        => [ 'type' => 'string' ],
 			'slug'           => [ 'type' => 'string' ],
@@ -1907,7 +1968,7 @@ class Webmastery_MCP_Posts {
 					'post_type'    => $type,
 					'post_title'   => sanitize_text_field( $input['title'] ),
 					'post_content' => wp_kses_post( $input['content'] ),
-					'post_status'  => in_array( $input['status'] ?? 'draft', [ 'draft', 'publish', 'pending', 'future' ], true )
+					'post_status'  => in_array( $input['status'] ?? 'draft', [ 'draft', 'publish', 'pending', 'private', 'future' ], true )
 										? $input['status']
 										: 'draft',
 				];
@@ -1999,7 +2060,7 @@ class Webmastery_MCP_Posts {
 				if ( ! current_user_can( 'edit_post', $id ) ) {
 					return [ 'success' => false, 'error' => 'You do not have permission to update this ' . $type . '.' ];
 				}
-				if ( isset( $input['status'] ) && in_array( $input['status'], [ 'publish', 'future' ], true ) && ! current_user_can( 'publish_' . $slug ) ) {
+				if ( isset( $input['status'] ) && in_array( $input['status'], [ 'publish', 'private', 'future' ], true ) && ! current_user_can( 'publish_' . $slug ) ) {
 					return [ 'success' => false, 'error' => 'You do not have permission to publish this ' . $type . '.' ];
 				}
 

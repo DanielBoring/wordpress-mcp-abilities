@@ -610,13 +610,17 @@ class Webmastery_MCP_SEO {
 			return [ 'success' => false, 'error' => 'status is invalid.' ];
 		}
 
-		$args = [
+		$per_page = min( max( 1, (int) ( $input['per_page'] ?? 10 ) ), 100 );
+		$page     = max( 1, (int) ( $input['page'] ?? 1 ) );
+		$args     = [
 			'post_type'      => $post_type,
 			'post_status'    => $status,
-			'posts_per_page' => min( max( 1, (int) ( $input['per_page'] ?? 10 ) ), 100 ),
-			'paged'          => max( 1, (int) ( $input['page'] ?? 1 ) ),
+			'posts_per_page' => -1,
+			'paged'          => 1,
 			'orderby'        => 'modified',
 			'order'          => 'DESC',
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
 		];
 
 		if ( is_array( $post_type ) && ! current_user_can( 'edit_pages' ) ) {
@@ -646,11 +650,22 @@ class Webmastery_MCP_SEO {
 			];
 		}
 
-		$query = new WP_Query( $args );
-		$items = [];
+		$query        = new WP_Query( $args );
+		$readable_ids = [];
 
-		foreach ( $query->posts as $post ) {
-			if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+		foreach ( $query->posts as $post_id ) {
+			if ( current_user_can( 'edit_post', (int) $post_id ) ) {
+				$readable_ids[] = (int) $post_id;
+			}
+		}
+
+		$total    = count( $readable_ids );
+		$page_ids = array_slice( $readable_ids, ( $page - 1 ) * $per_page, $per_page );
+		$items    = [];
+
+		foreach ( $page_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
 				continue;
 			}
 
@@ -669,8 +684,8 @@ class Webmastery_MCP_SEO {
 			'success' => true,
 			'data'    => [
 				'items'        => $items,
-				'total'        => (int) $query->found_posts,
-				'total_pages'  => (int) $query->max_num_pages,
+				'total'        => $total,
+				'total_pages'  => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
 				'yoast_active' => true,
 				'seopress_active' => self::is_seopress_active(),
 			],
