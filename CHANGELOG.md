@@ -11,6 +11,7 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 ### Changed
 
 - Hardened post, page, custom post type, media, and SEO score list abilities so returned items and totals only include objects the caller can access for the requested status, including private and trashed content.
+- Removed plugin auto-update status from plugin responses to avoid Plugin Check updater-detection warnings; plugin update availability remains read-only.
 - Restricted runtime environment details, WordPress version, and theme version to Administrator-capable users while keeping low-privilege site basics available.
 - Removed author login fields from content responses and gated user login/email fields behind user-edit permissions.
 - Required publish capabilities for private, scheduled, and published status changes and for bulk publishing.

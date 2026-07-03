@@ -222,7 +222,6 @@ The official Plugin Check utility must evaluate the built package from an `webma
 
 Known warnings that are acceptable for this plugin:
 
-- `update_modification_detected` for `auto_update_plugins`: plugin listing reads this option only to report whether auto-updates are enabled; it does not alter WordPress update routines.
 - `WordPress.DB.SlowDBQuery.slow_db_query_meta_query` in SEO overview: the Yoast focus-keyword and meta-description checks are explicit administrator-requested diagnostics, limited to 50 published posts/pages, and return IDs only.
 
 ---
