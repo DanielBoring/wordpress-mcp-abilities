@@ -55,15 +55,15 @@ Every ability uses WordPress capability checks. An Editor account can handle day
 
 | Area | What the agent can do | Typical role |
 | --- | --- | --- |
-| Posts and pages | Create, list, read, update, restore, trash, bulk publish, bulk trash, and patch targeted content | Author or Editor |
+| Posts and pages | Create, list, read, update, restore, trash, bulk publish, bulk trash, and patch targeted content with object/status-aware filtering for private, trash, draft, pending, and scheduled content | Author or Editor |
 | Blocks and revisions | Inspect Gutenberg block paths/hashes, replace one block, list revisions, restore a revision | Author or Editor |
 | Post meta | Read, update, and delete safe custom fields; write supported Yoast SEO and SEOPress metadata | Author or Editor |
-| Custom post types | Discover eligible public CPTs and generate list/get/create/update/delete abilities | CPT capability map |
+| Custom post types | Discover eligible public CPTs and generate list/get/create/update/delete abilities with CPT capability-map and object/status-aware list filtering | CPT capability map |
 | Taxonomy | List, get, create, update, and delete categories and tags | Subscriber to Editor |
 | Comments | List, reply, update, approve, hold, trash, or mark spam | Editor |
 | Media | List, inspect, update, upload public image URLs, set featured images, and delete media | Author or Editor |
 | Content hygiene | Find orphaned media, posts/pages missing featured images, and stuck scheduled posts | Author or Editor |
-| Site info | Return safe public site, current-user, and environment context | Subscriber |
+| Site info | Return safe site basics and current-user context; runtime, WordPress version, database, and theme-version details require Administrator access | Subscriber to Administrator |
 | SEO and webmaster signals | Analyze content, inspect and write supported Yoast/SEOPress metadata, read Yoast scores, inspect generated Yoast head data, and check sitemap/webmaster signals | Author to Administrator |
 | Plugins, users, health, security, performance, backups, database | Audit or manage sensitive site areas with explicit admin capabilities | Administrator |
 
@@ -145,10 +145,13 @@ If discovery shows fewer abilities than this repo documents, the connected WordP
 - Use a dedicated service account, not your personal account.
 - Use **Editor** for routine content work and a separate **Administrator** account only for sensitive audits or plugin management.
 - WordPress capability checks gate every ability.
+- List abilities for posts, pages, custom post types, media, and SEO scores filter every returned object before exposing full details; private, trashed, draft, pending, and scheduled content is only returned when WordPress grants the matching object/status capability.
+- Creating or updating content as `publish`, `private`, or `future` requires the relevant publish capability, and bulk publishing requires `publish_posts`.
+- Author display names remain in content responses, but login names are omitted from post, page, CPT, revision, and content-hygiene responses. User login and email fields are only returned from user lookup abilities when the caller can edit that user.
 - Deletes for posts and pages move content to trash; media deletion is permanent.
 - Block and partial-content edits can use hash preconditions and fail when a target is missing, ambiguous, or stale.
-- Site info abilities deliberately avoid secrets, filesystem paths, salts, auth keys, and raw server internals.
-- `plugin-audit`, `user-access-audit`, `database-health`, `performance-status`, `backup-status`, `security-audit`, and `site-health-check` are Administrator-only.
+- Subscriber-safe site info deliberately avoids secrets, filesystem paths, salts, auth keys, raw server internals, WordPress version, and theme version. `get-environment-info` requires `manage_options`.
+- `get-environment-info`, `plugin-audit`, `user-access-audit`, `database-health`, `performance-status`, `backup-status`, `security-audit`, and `site-health-check` are Administrator-only.
 
 Read the [full security model](https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/#security) before giving an agent Administrator credentials.
 

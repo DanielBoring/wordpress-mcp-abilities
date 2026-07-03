@@ -27,11 +27,11 @@ Highlights:
 * Discover eligible public custom post types and use generated CRUD abilities for each one.
 * Read, update, and delete safe post meta, including supported Yoast SEO and SEOPress metadata fields.
 * Run content hygiene checks for orphaned media, missing featured images, and stuck scheduled posts.
-* Inspect safe site, user, and environment context without exposing secrets or raw server internals.
+* Inspect safe site and current-user context, with runtime environment details reserved for Administrator accounts.
 * Audit plugins, administrator accounts, backups, performance settings, database bloat, site health, and security posture.
 * Analyze SEO metadata and public Google/Bing webmaster verification proof.
 
-All abilities enforce WordPress capability checks. If the connected account cannot perform the equivalent WordPress action, the ability fails instead of bypassing WordPress permissions.
+All abilities enforce WordPress capability checks. If the connected account cannot perform the equivalent WordPress action, the ability fails instead of bypassing WordPress permissions. List abilities for posts, pages, custom post types, media, and SEO scores also filter each returned object before exposing full details, so private, trashed, draft, pending, and scheduled content follows WordPress object/status permissions.
 
 For full setup instructions, ability tables, and the deeper security model, visit:
 https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
@@ -60,7 +60,7 @@ It requires a WordPress site where custom plugins can be installed. Self-hosted 
 
 Use a dedicated Editor account for normal content workflows: posts, pages, taxonomy, comments, media, revisions, content blocks, and content hygiene.
 
-Use a separate dedicated Administrator account only when you need Administrator-only workflows such as plugin management, user access audits, site health, database health, performance status, backup status, security audits, or site-wide SEO overview.
+Use a separate dedicated Administrator account only when you need Administrator-only workflows such as runtime environment details, plugin management, user access audits, site health, database health, performance status, backup status, security audits, or site-wide SEO overview.
 
 = Why use a dedicated account? =
 
@@ -74,6 +74,8 @@ No. Structural SEO checks still work without either plugin. Yoast-specific metad
 
 Write operations go through WordPress APIs and capability checks. Posts and pages move to trash rather than being permanently deleted. Media deletion is permanent. Block and partial-content patching can use hashes so stale or ambiguous edits fail safely.
 
+Publishing, scheduling, or marking content private requires the relevant WordPress publish capability. User login/email fields and author login names are not exposed to lower-privilege list responses.
+
 = What if discovery shows fewer abilities than the documentation? =
 
 The connected WordPress site may be running an older plugin version. Update the plugin on that site, then call `mcp-adapter-discover-abilities` again.
@@ -84,6 +86,11 @@ The complete ability reference and client setup guide are maintained at:
 https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 
 == Changelog ==
+
+= Unreleased =
+* Harden permission callbacks and per-object filtering for posts, pages, custom post types, media, SEO score lists, plugin activation/deactivation, and runtime environment details.
+* Require publish capabilities for private/scheduled/published status changes and bulk publishing.
+* Reduce sensitive identity and fingerprinting fields in low-privilege responses.
 
 = 2.4.0 =
 * Add expanded Yoast SEO free metadata coverage for canonical URLs, breadcrumb titles, Schema.org page/article types, Open Graph and Twitter metadata, primary category, robots directives, inclusive-language score inspection, generated Yoast head inspection, and deeper sitemap index diagnostics.
@@ -111,6 +118,9 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 * Add block inspection, single-block replacement, and safer partial post body edits.
 
 == Upgrade Notice ==
+
+= Unreleased =
+Permission hardening reduces low-privilege visibility into private/trash content, runtime versions, and sensitive identity fields. Use Administrator credentials for environment details and plugin management.
 
 = 2.4.0 =
 Adds expanded Yoast SEO and SEOPress free metadata coverage, including richer social, robots, canonical, breadcrumb, Schema, read-only inspection, and site overview diagnostics.

@@ -16,16 +16,21 @@ class Webmastery_MCP_Users {
 			return null;
 		}
 
-		return [
+		$data = [
 			'id'           => (int) $user->ID,
-			'login'        => $user->user_login,
 			'display_name' => $user->display_name,
 			'nicename'     => $user->user_nicename,
-			'email'        => $user->user_email,
 			'url'          => $user->user_url,
 			'roles'        => array_values( array_map( 'strval', (array) $user->roles ) ),
 			'registered'   => $user->user_registered,
 		];
+
+		if ( current_user_can( 'edit_user', (int) $user->ID ) || current_user_can( 'edit_users' ) ) {
+			$data['login'] = $user->user_login;
+			$data['email'] = $user->user_email;
+		}
+
+		return $data;
 	}
 
 	public static function permission() {

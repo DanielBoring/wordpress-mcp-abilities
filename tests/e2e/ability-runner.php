@@ -511,11 +511,48 @@ e2e_ensure_role(
 		'read_private_mcp_cases',
 	]
 );
+e2e_ensure_role(
+	'limited_editor',
+	'Limited Editor',
+	[
+		'read',
+		'edit_posts',
+		'edit_others_posts',
+		'edit_pages',
+		'edit_others_pages',
+		'upload_files',
+	]
+);
+e2e_ensure_role(
+	'limited_book_manager',
+	'Limited Book Manager',
+	[
+		'read',
+		'edit_mcp_books',
+		'edit_others_mcp_books',
+		'edit_published_mcp_books',
+		'assign_mcp_genres',
+	]
+);
+e2e_ensure_role(
+	'user_lister',
+	'User Lister',
+	[
+		'read',
+		'list_users',
+	]
+);
 
-$book_manager_id = e2e_ensure_user( 'book_manager_test', 'book-manager@test.local', 'book_manager' );
-$case_manager_id = e2e_ensure_user( 'case_manager_test', 'case-manager@test.local', 'case_manager' );
+$limited_editor_id       = e2e_ensure_user( 'limited_editor_test', 'limited-editor@test.local', 'limited_editor' );
+$book_manager_id         = e2e_ensure_user( 'book_manager_test', 'book-manager@test.local', 'book_manager' );
+$limited_book_manager_id = e2e_ensure_user( 'limited_book_manager_test', 'limited-book-manager@test.local', 'limited_book_manager' );
+$case_manager_id         = e2e_ensure_user( 'case_manager_test', 'case-manager@test.local', 'case_manager' );
+$user_lister_id          = e2e_ensure_user( 'user_lister_test', 'user-lister@test.local', 'user_lister' );
+( new WP_User( $limited_editor_id ) )->set_role( 'limited_editor' );
 ( new WP_User( $book_manager_id ) )->set_role( 'book_manager' );
+( new WP_User( $limited_book_manager_id ) )->set_role( 'limited_book_manager' );
 ( new WP_User( $case_manager_id ) )->set_role( 'case_manager' );
+( new WP_User( $user_lister_id ) )->set_role( 'user_lister' );
 
 e2e_delete_term_by_slug( 'mcp-e2e-created-category', 'category' );
 e2e_delete_term_by_slug( 'mcp-e2e-created-tag', 'post_tag' );
@@ -528,8 +565,11 @@ $fixtures = array(
 	'editor_id'          => $editor_id,
 	'subscriber_id'      => $subscriber_id,
 	'no_role_id'         => $no_role_id,
+	'limited_editor_id'  => $limited_editor_id,
 	'book_manager_id'    => $book_manager_id,
+	'limited_book_manager_id' => $limited_book_manager_id,
 	'case_manager_id'    => $case_manager_id,
+	'user_lister_id'     => $user_lister_id,
 	'category_id'        => e2e_ensure_term_id( 'MCP E2E Category', 'category' ),
 	'tag_id'             => e2e_ensure_term_id( 'mcp-e2e-tag', 'post_tag' ),
 	'genre_id'           => e2e_ensure_term_id( 'MCP E2E Genre', 'mcp_genre' ),
@@ -591,9 +631,16 @@ $fixtures['meta_post_id']    = e2e_insert_post( 'post', 'MCP E2E Meta Post', 'Me
 $fixtures['delete_meta_post_id'] = e2e_insert_post( 'post', 'MCP E2E Delete Meta Post', 'Delete meta fixture.', $author_id );
 $fixtures['bulk_trash_post_id']   = e2e_insert_post( 'post', 'MCP E2E Bulk Trash Post', 'Bulk trash fixture.', $author_id );
 $fixtures['bulk_publish_post_id'] = e2e_insert_post( 'post', 'MCP E2E Bulk Publish Post', 'Bulk publish fixture.', $author_id, 'draft' );
+$fixtures['limited_bulk_publish_post_id'] = e2e_insert_post( 'post', 'MCP E2E Limited Bulk Publish Post', 'Limited publish fixture.', $limited_editor_id, 'draft' );
 $fixtures['bulk_missing_post_id'] = 987654321;
 $fixtures['page_id']         = e2e_insert_post( 'page', 'MCP E2E Page', 'Content for MCP E2E page.', $editor_id );
+$fixtures['private_post_id'] = e2e_insert_post( 'post', 'MCP E2E Private Post', 'Private post fixture.', $author_id, 'private' );
+$fixtures['private_page_id'] = e2e_insert_post( 'page', 'MCP E2E Private Page', 'Private page fixture.', $editor_id, 'private' );
+$fixtures['trash_filter_post_id'] = e2e_insert_post( 'post', 'MCP E2E Trash Filter Post', 'Trash filter fixture.', $author_id, 'draft' );
+$fixtures['trash_filter_page_id'] = e2e_insert_post( 'page', 'MCP E2E Trash Filter Page', 'Trash filter fixture.', $editor_id, 'draft' );
 $fixtures['book_id']         = e2e_insert_post( 'mcp_book', 'MCP E2E Book', 'Content for MCP E2E book.', $book_manager_id );
+$fixtures['private_book_id'] = e2e_insert_post( 'mcp_book', 'MCP E2E Private Book', 'Private CPT fixture.', $book_manager_id, 'private' );
+$fixtures['trash_filter_book_id'] = e2e_insert_post( 'mcp_book', 'MCP E2E Trash Filter Book', 'Trash CPT fixture.', $book_manager_id, 'draft' );
 $fixtures['delete_book_id']  = e2e_insert_post( 'mcp_book', 'MCP E2E Delete Book', 'Delete CPT fixture.', $book_manager_id );
 $fixtures['case_id']         = e2e_insert_post( 'mcp_case_study', 'MCP E2E Case Study', 'Content for MCP E2E case study.', $case_manager_id );
 $fixtures['delete_case_id']  = e2e_insert_post( 'mcp_case_study', 'MCP E2E Delete Case Study', 'Delete CPT fixture.', $case_manager_id );
@@ -619,6 +666,9 @@ $fixtures['block_hash_post_path_1'] = e2e_block_hash_for_post_path( $fixtures['b
 
 wp_trash_post( $fixtures['restore_post_id'] );
 wp_trash_post( $fixtures['restore_page_id'] );
+wp_trash_post( $fixtures['trash_filter_post_id'] );
+wp_trash_post( $fixtures['trash_filter_page_id'] );
+wp_trash_post( $fixtures['trash_filter_book_id'] );
 
 wp_set_post_categories( $fixtures['post_id'], array( $fixtures['category_id'] ) );
 wp_set_post_tags( $fixtures['post_id'], array( $fixtures['tag_id'] ) );
@@ -763,10 +813,13 @@ $roles = array(
 	'admin'        => $admin_id,
 	'author'       => $author_id,
 	'editor'       => $editor_id,
+	'limited_editor' => $limited_editor_id,
 	'subscriber'   => $subscriber_id,
 	'no_role'      => $no_role_id,
 	'book_manager' => $book_manager_id,
+	'limited_book_manager' => $limited_book_manager_id,
 	'case_manager' => $case_manager_id,
+	'user_lister'  => $user_lister_id,
 );
 
 $registered = array_filter(
@@ -857,6 +910,16 @@ foreach ( $manifest as $case ) {
 		foreach ( (array) $case['assert_paths'] as $path ) {
 			e2e_get_path_value( $result, $path, $exists );
 			if ( ! $exists ) {
+				$passed = false;
+				break;
+			}
+		}
+	}
+
+	if ( $passed && ! empty( $case['assert_missing_paths'] ) ) {
+		foreach ( (array) $case['assert_missing_paths'] as $path ) {
+			e2e_get_path_value( $result, $path, $exists );
+			if ( $exists ) {
 				$passed = false;
 				break;
 			}

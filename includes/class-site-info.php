@@ -18,6 +18,14 @@ class Webmastery_MCP_Site_Info {
 		return true;
 	}
 
+	public static function admin_permission() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error( 'forbidden', 'Requires manage_options capability.' );
+		}
+
+		return true;
+	}
+
 	public static function get_site_info() {
 		$theme = wp_get_theme();
 
@@ -29,10 +37,8 @@ class Webmastery_MCP_Site_Info {
 				'site_url'            => site_url(),
 				'home_url'            => home_url(),
 				'language'            => get_bloginfo( 'language' ),
-				'wordpress_version'   => get_bloginfo( 'version' ),
 				'active_theme'        => [
-					'name'    => $theme->get( 'Name' ),
-					'version' => $theme->get( 'Version' ),
+					'name' => $theme->get( 'Name' ),
 				],
 				'timezone'            => self::get_timezone(),
 				'is_multisite'        => is_multisite(),
@@ -60,11 +66,18 @@ class Webmastery_MCP_Site_Info {
 	public static function get_environment_info() {
 		global $wpdb;
 
+		$theme = wp_get_theme();
+
 		return [
 			'success' => true,
 			'data'    => [
 				'php_version'         => PHP_VERSION,
 				'mysql_version'       => (string) $wpdb->db_version(),
+				'wordpress_version'   => get_bloginfo( 'version' ),
+				'active_theme'        => [
+					'name'    => $theme->get( 'Name' ),
+					'version' => $theme->get( 'Version' ),
+				],
 				'wp_environment_type' => wp_get_environment_type(),
 				'locale'              => get_locale(),
 			],
@@ -102,10 +115,10 @@ class Webmastery_MCP_Site_Info {
 	private static function register_environment_info() {
 		wp_register_ability( 'webmastery-site-toolkit-for-mcp/get-environment-info', [
 			'label'               => 'Get Environment Info',
-			'description'         => 'Get stable, non-sensitive WordPress runtime details without filesystem paths or secrets.',
+			'description'         => 'Get administrative WordPress runtime details without filesystem paths or secrets.',
 			'category'            => 'webmastery-site-toolkit-for-mcp',
 			'execute_callback'    => [ self::class, 'get_environment_info' ],
-			'permission_callback' => [ self::class, 'permission' ],
+			'permission_callback' => [ self::class, 'admin_permission' ],
 			'meta'                => [
 				'annotations' => [ 'readonly' => true, 'destructive' => false, 'idempotent' => true ],
 				'mcp'         => [ 'public' => true, 'type' => 'tool' ],

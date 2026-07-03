@@ -55,6 +55,41 @@ class Webmastery_MCP_Media {
 		};
 	}
 
+	private static function can_read_attachment( $attachment ) {
+		$attachment = get_post( $attachment );
+		return $attachment && 'attachment' === $attachment->post_type && current_user_can( 'edit_post', $attachment->ID );
+	}
+
+	private static function query_readable_attachments( $args, $page, $per_page ) {
+		$count_args = array_merge(
+			$args,
+			[
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'paged'          => 1,
+				'no_found_rows'  => true,
+			]
+		);
+
+		$query        = new WP_Query( $count_args );
+		$readable_ids = [];
+
+		foreach ( $query->posts as $id ) {
+			if ( self::can_read_attachment( (int) $id ) ) {
+				$readable_ids[] = (int) $id;
+			}
+		}
+
+		$total    = count( $readable_ids );
+		$page_ids = array_slice( $readable_ids, ( max( 1, (int) $page ) - 1 ) * $per_page, $per_page );
+
+		return [
+			'items'       => array_values( array_filter( array_map( [ self::class, 'normalize' ], array_map( 'get_post', $page_ids ) ) ) ),
+			'total'       => $total,
+			'total_pages' => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+		];
+	}
+
 	private static function error_response( $code, $message, $data = [] ) {
 		$response = [
 			'success' => false,
@@ -185,15 +220,13 @@ class Webmastery_MCP_Media {
 					$args['author'] = get_current_user_id();
 				}
 
-				$query = new WP_Query( $args );
+				$per_page = min( max( 1, (int) ( $input['per_page'] ?? 20 ) ), 100 );
+				$page     = max( 1, (int) ( $input['page'] ?? 1 ) );
+				$data     = self::query_readable_attachments( $args, $page, $per_page );
 
 				return [
 					'success' => true,
-					'data'    => [
-						'items'       => array_values( array_filter( array_map( [ self::class, 'normalize' ], $query->posts ) ) ),
-						'total'       => (int) $query->found_posts,
-						'total_pages' => (int) $query->max_num_pages,
-					],
+					'data'    => $data,
 				];
 			},
 			'permission_callback' => self::permission( 'upload_files' ),
