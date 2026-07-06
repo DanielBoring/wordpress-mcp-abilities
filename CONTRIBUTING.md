@@ -43,6 +43,7 @@ This plugin follows [WordPress Coding Standards](https://developer.wordpress.org
 
 - **Sanitize inputs** — use `sanitize_text_field()` for strings, `absint()` for IDs, `wp_kses_post()` for HTML content, and enum validation for fixed-value fields
 - **Capability checks** — every ability must have a `permission_callback` that returns a `WP_Error` on failure, not just `false`; prefer object-specific checks such as `edit_post` / `delete_post` when an object ID is available, and make list/query abilities filter each returned object plus totals before exposing full details
+- **Security-sensitive abilities** — include allowed and denied manifest cases for abilities that expose private data, user identity, environment/plugin details, destructive actions, uploads, or status transitions; use `assert_missing_paths` when lower-privilege responses must hide fields
 - **Prefer WordPress APIs** — use WordPress API functions (`get_posts()`, `wp_insert_post()`, etc.) for normal reads and writes. Direct `$wpdb` reads are limited to administrator-only diagnostics such as database health checks, must be prepared where variables are present, and must surface query errors.
 - **No output buffering** — abilities return arrays or `WP_Error` objects; the MCP Adapter handles serialization
 - **WordPress.org readiness** — avoid trademark-confusing names, spammy readme text, undisclosed external calls, bundled duplicate libraries, and non-GPL-compatible assets
@@ -54,7 +55,7 @@ composer install
 composer qa
 ```
 
-`composer qa` runs the normal fast pre-PR checks: Static QA plus Unit Tests. See [`docs/qa-strategy.md`](docs/qa-strategy.md) for the full QA posture, including when to run Ability Contract QA, Full MCP E2E QA, and Release Package QA.
+`composer qa` runs the normal fast pre-PR checks: Static QA plus Unit Tests. See [`docs/qa-strategy.md`](docs/qa-strategy.md) for the full QA posture, including when to run Ability Contract QA, Full MCP E2E QA, Release Package QA, and Compatibility QA.
 
 ---
 
@@ -125,11 +126,12 @@ Environment-specific notes for GitHub Actions, Windows PowerShell, and Windows G
 | Command | What it runs |
 | --- | --- |
 | `composer qa` | Fast local default: Static QA plus Unit Tests |
-| `composer qa:static` | PHP lint, PHPCS, PHPStan, Composer audit, manifest structure validation, and `git diff --check` |
+| `composer qa:static` | PHP lint, PHPCS, PHPStan, Composer audit, manifest structure validation, security QA validation, and `git diff --check` |
 | `composer qa:unit` | PHPUnit unit tests |
+| `composer validate:security-qa` | Static security QA policy checks for risky permission callbacks and required permission-hardening manifest cases |
 | `composer qa:contract` | Docker Ability Contract QA against an already-running Compose stack |
 | `composer qa:e2e` | Docker Full MCP E2E QA against an already-running Compose stack |
-| `composer qa:release` | Release Package QA, including built package validation and WordPress Plugin Check |
+| `composer qa:release` | Release Package QA, including Docker contract/transport QA, built package validation, and WordPress Plugin Check |
 | `E2E_MANAGE_COMPOSE=1 composer qa:contract` | Ability Contract QA with automatic Compose startup and cleanup |
 | `E2E_MANAGE_COMPOSE=1 composer qa:e2e` | Full MCP E2E QA with automatic Compose startup and cleanup |
 | `scripts/qa-local.sh --contract` | Unix/Git Bash wrapper for Composer QA plus managed Ability Contract QA |
@@ -201,7 +203,8 @@ Release checklist:
 4. Update `Stable tag`, plugin changelog entries, and upgrade notice in `readme.txt`.
 5. Confirm the generated zip uses the `webmastery-site-toolkit-for-mcp` directory slug.
 6. Run the official WordPress Plugin Check utility against the generated `webmastery-site-toolkit-for-mcp` package and confirm there are no unexpected errors.
-7. Tag and push `vX.Y.Z` to trigger the release workflow.
+7. Review the latest scheduled/manual `6 - Compatibility QA` result for upstream WordPress/PHP/plugin dependency drift.
+8. Tag and push `vX.Y.Z` to trigger the release workflow.
 
 ---
 
@@ -212,7 +215,7 @@ Release checklist:
 3. Add release notes to `readme.txt` under `== Changelog ==` and `== Upgrade Notice ==`
 4. Commit: `git commit -m "chore: release v1.x.x"`
 5. Tag and push: `git tag v1.x.x && git push origin v1.x.x`
-6. GitHub Actions builds the zip and creates the release automatically
+6. GitHub Actions runs contract, transport, package, and Plugin Check validation, then creates the release automatically
 7. Download the zip from the release and verify Plugin Check evaluates it as the `webmastery-site-toolkit-for-mcp` slug
 8. Upload the verified package to the WordPress.org SVN
 

@@ -1,4 +1,4 @@
-name: Release
+name: 5 - Release
 
 on:
   push:
@@ -7,7 +7,9 @@ on:
 
 jobs:
   release:
+    name: 5 - Publish Release
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     permissions:
       contents: write
 
@@ -78,7 +80,7 @@ jobs:
           echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
           echo "notes-file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
 
-      - name: Run Release Package QA
+      - name: Run 5 - Release Package QA
         run: bash scripts/release-qa.sh "${{ steps.validate.outputs.version }}"
 
       - name: Create GitHub Release

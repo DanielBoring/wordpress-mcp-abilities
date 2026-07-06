@@ -1,4 +1,4 @@
-name: Unit Tests
+name: 2 - Unit Tests
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
 
 jobs:
   unit-tests:
+    name: 2 - Unit Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read

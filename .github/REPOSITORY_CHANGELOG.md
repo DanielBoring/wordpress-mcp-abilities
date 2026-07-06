@@ -9,7 +9,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 ### Added
 
 - Added E2E manifest fixtures and missing-path assertions for permission hardening coverage, including filtered private/trash list results and sensitive identity-field absence checks.
-- Added a five-layer QA strategy guide, PHPUnit/PHPStan QA commands, unit-test scaffolding, and separate GitHub Actions lanes for Static QA, Unit Tests, Ability Contract QA, Full MCP E2E QA, and Release Package QA.
+- Added a layered QA strategy guide, PHPUnit/PHPStan QA commands, unit-test scaffolding, and separate GitHub Actions lanes for Static QA, Unit Tests, Ability Contract QA, Full MCP E2E QA, and Release Package QA.
 - Added environment-specific QA notes for GitHub Actions, Windows PowerShell, and Windows Git Bash.
 - Added secondary in-depth E2E CRUD QA that exercises real MCP Adapter HTTP JSON-RPC sessions against the default server.
 - Added E2E manifest coverage for expanded Yoast SEO metadata writes and the read-only Yoast metadata inspection ability.
@@ -19,11 +19,16 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 - Added local QA preflight-only modes and clearer missing-tool guidance for PHP, Composer, Docker, and Bash prerequisites.
 - Added manifest E2E setup support for temporarily overriding active plugins in scoped ability cases.
 - Added cross-platform local QA helper scripts, a Composer QA command, and a lightweight E2E manifest validator for contributor preflight checks.
+- Added security QA policy validation for risky ability permission callbacks and permission-hardening manifest coverage.
+- Added scheduled/manual Compatibility QA for primary and floating-latest WordPress Docker stacks.
 - Added a dedicated Coding Standards workflow that installs Composer dev dependencies and runs PHPCS on pushes, pull requests, and manual dispatches.
 - Added an E2E mu-plugin fixture for custom post type ability coverage.
 
 ### Changed
 
+- Numbered the GitHub Actions workflow and job display names with `# -` prefixes so required checks align with the QA strategy guide.
+- Matured the QA strategy for the approved WordPress.org plugin by documenting security-sensitive ability coverage, compatibility triage, stricter debug-log expectations, and release transport coverage.
+- Updated Release Package QA to run both Ability Contract QA and Full MCP E2E QA before package validation and Plugin Check.
 - Expanded the QA strategy guide with a phased execution appendix for aligning existing commands, hardening fast checks, deepening Docker coverage, adding compatibility checks, scaling E2E maintainability, and introducing advanced quality signals.
 - Updated E2E PR comments to replace static success bullets with runtime-derived run facts, case pass/fail counts, debug-log status, changed files, and separate PR-head/tested-merge commit SHAs.
 - Updated E2E runner behavior so local runs can optionally manage Docker Compose startup and cleanup while preserving CI behavior.

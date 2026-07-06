@@ -42,7 +42,7 @@ export E2E_MANAGE_COMPOSE=1
 export E2E_KEEP_COMPOSE=1
 trap 'docker compose down -v --remove-orphans >/dev/null 2>&1 || true' EXIT
 
-bash scripts/e2e-test.sh contract
+bash scripts/e2e-test.sh all
 docker compose exec -T wordpress wp --allow-root plugin install plugin-check --activate --force
 docker compose exec -T wordpress rm -rf "/var/www/html/wp-content/plugins/${PLUGIN_SLUG}-package"
 docker compose cp "build/${PLUGIN_SLUG}" "wordpress:/var/www/html/wp-content/plugins/${PLUGIN_SLUG}-package"

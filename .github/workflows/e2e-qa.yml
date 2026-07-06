@@ -1,4 +1,4 @@
-name: Docker QA
+name: 3-4 - Docker QA
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
 
 jobs:
   changes:
+    name: Detect Docker QA changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -65,6 +66,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   ability-contract-qa:
+    name: 3 - Ability Contract QA
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     runs-on: ubuntu-latest
@@ -163,7 +165,7 @@ jobs:
             exit 0
           fi
           docker compose exec -T wordpress cat /var/www/html/wp-content/debug.log
-          if docker compose exec -T wordpress grep -Eiq 'fatal error|parse error|uncaught|error' /var/www/html/wp-content/debug.log; then
+          if docker compose exec -T wordpress grep -Eiq 'fatal error|parse error|uncaught|php (fatal error|parse error|warning|notice|deprecated)|deprecated|warning|notice|error' /var/www/html/wp-content/debug.log; then
             echo "status=error_entries_found" >> "$GITHUB_OUTPUT"
             exit 1
           fi
@@ -190,6 +192,7 @@ jobs:
           if-no-files-found: ignore
 
   full-mcp-e2e-qa:
+    name: 4 - Full MCP E2E QA
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     runs-on: ubuntu-latest
@@ -238,6 +241,7 @@ jobs:
           if-no-files-found: ignore
 
   comment-pr:
+    name: Docker QA PR comment
     needs: [changes, ability-contract-qa, full-mcp-e2e-qa]
     if: github.event_name == 'pull_request' && needs.changes.outputs.should-run == 'true' && always()
     runs-on: ubuntu-latest
@@ -311,6 +315,7 @@ jobs:
           gh api "repos/$OWNER/$REPO/issues/$ISSUE_NUMBER/comments" --method POST -f body="$BODY"
 
   skip-summary:
+    name: Docker QA skip summary
     needs: changes
     if: needs.changes.outputs.should-run != 'true'
     runs-on: ubuntu-latest

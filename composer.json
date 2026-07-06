@@ -34,13 +34,15 @@
 			"@phpstan",
 			"@audit:locked",
 			"@validate:e2e-manifest",
+			"@validate:security-qa",
 			"@diff-check"
 		],
 		"qa:unit": "php vendor/phpunit/phpunit/phpunit --configuration=phpunit.xml.dist",
 		"test": [
 			"@qa:unit"
 		],
-		"validate:e2e-manifest": "php scripts/validate-e2e-manifest.php"
+		"validate:e2e-manifest": "php scripts/validate-e2e-manifest.php",
+		"validate:security-qa": "php scripts/validate-security-qa.php"
 	},
 	"config": {
 		"allow-plugins": {

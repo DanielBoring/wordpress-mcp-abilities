@@ -1,4 +1,4 @@
-name: Static QA
+name: 1 - Static QA
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
 
 jobs:
   static-qa:
+    name: 1 - Static QA
     runs-on: ubuntu-latest
     permissions:
       contents: read
