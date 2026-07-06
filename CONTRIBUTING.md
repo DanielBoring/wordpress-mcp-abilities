@@ -57,6 +57,12 @@ composer qa
 
 `composer qa` runs the normal fast pre-PR checks: Static QA plus Unit Tests. See [`docs/qa-strategy.md`](docs/qa-strategy.md) for the full QA posture, including when to run Ability Contract QA, Full MCP E2E QA, Release Package QA, and Compatibility QA.
 
+The repo strategy docs explain how maintainers operate the project:
+
+- [`docs/ci-cd-strategy.md`](docs/ci-cd-strategy.md) covers GitHub Actions, branch protection, workflow permissions, scheduled checks, and artifact policy.
+- [`docs/security-strategy.md`](docs/security-strategy.md) covers ability permissions, sensitive data, dependency and secret handling, and vulnerability response.
+- [`docs/release-strategy.md`](docs/release-strategy.md) covers versioning, release readiness, GitHub releases, WordPress.org SVN publishing, hotfixes, and rollback policy.
+
 ---
 
 ## Adding a new ability
@@ -185,6 +191,16 @@ Before packaging a release for WordPress.org, maintainers compare the final plug
 - Use WordPress-bundled libraries instead of shipping duplicate copies.
 - Verify the `Version` header, `Stable tag`, changelog, release zip name, and top-level zip directory all describe the same release.
 
+Use this quick mapping when deciding whether a PR needs guideline review:
+
+| PR changes | Guideline concerns to review |
+| --- | --- |
+| Plugin name, slug, description, tags, screenshots, banners, or `readme.txt` | Trademarks/project names, readme spam, affiliate/service link disclosure, and public claims. |
+| Assets, bundled libraries, generated files, or build steps | GPL compatibility, human-readable source, public build instructions, and WordPress default library usage. |
+| External APIs, telemetry, remote requests, ads, credits, or SaaS integrations | Explicit consent, service documentation, privacy policy/readme disclosure, and no executable remote code. |
+| Admin notices, dashboards, settings pages, or upsell copy | No dashboard hijacking, notices are scoped/dismissible/actionable, and no misleading locked-feature or trialware behavior. |
+| Release metadata, package contents, tags, or SVN upload | Stable version availability, version increment, `Stable tag` alignment, descriptive SVN commits, and no rapid SVN churn. |
+
 ---
 
 ## Versioning policy
@@ -209,6 +225,8 @@ Release checklist:
 ---
 
 ## Release process (maintainers)
+
+See [`docs/release-strategy.md`](docs/release-strategy.md) for the complete release governance model and official GitHub/WordPress references.
 
 1. Update the `Version` header in `webmastery-site-toolkit-for-mcp.php`
 2. Move plugin-facing `CHANGELOG.md` notes from `## Unreleased` into the release version

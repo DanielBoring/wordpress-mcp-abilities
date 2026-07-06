@@ -8,7 +8,7 @@
 <!-- e.g. webmastery-site-toolkit-for-mcp/list-media — leave blank for bug fixes -->
 
 ## Testing
-<!-- How did you verify this works? Include local QA commands such as composer qa, scripts/qa-local.sh --contract, scripts/qa-local.sh --e2e, scripts/qa-local.ps1 -Contract, scripts/qa-local.ps1 -E2E, or scripts/qa-local.ps1 -PreflightOnly, plus any manual ability calls and what they returned. See docs/qa-strategy.md for which command fits each change type. -->
+<!-- How did you verify this works? Include local QA commands such as composer qa, scripts/qa-local.sh --contract, scripts/qa-local.sh --e2e, scripts/qa-local.ps1 -Contract, scripts/qa-local.ps1 -E2E, or scripts/qa-local.ps1 -PreflightOnly, plus any manual ability calls and what they returned. See docs/qa-strategy.md for which command fits each change type. For process-impacting changes, also check docs/ci-cd-strategy.md, docs/security-strategy.md, and docs/release-strategy.md. -->
 <!-- 1 - Static QA and 2 - Unit Tests run automatically on every PR. 3 - Ability Contract QA and 4 - Full MCP E2E QA run automatically for runtime-impacting changes. -->
 
 ## Checklist
@@ -24,5 +24,6 @@
 - [ ] Repository, CI, contributor, GitHub platform, template, or agent workflow changes update `.github/REPOSITORY_CHANGELOG.md` under `## Unreleased`
 - [ ] Local QA checked with `composer qa` and the relevant Docker/release QA wrapper from `docs/qa-strategy.md`, or the missing tool/blocker is documented above
 - [ ] Compatibility QA was considered for release candidates, dependency-sensitive changes, or WordPress/PHP support changes
-- [ ] WordPress.org Detailed Plugin Guidelines were considered for public-facing or release-impacting changes such as naming, readme text, privacy/external calls, licensing, bundled assets, and release packaging
+- [ ] CI/CD, security, or release process changes update the matching strategy document when policy changes
+- [ ] WordPress.org Detailed Plugin Guidelines were considered for public-facing or release-impacting changes such as naming, readme text, privacy/external calls, licensing, bundled assets, and release packaging; see `CONTRIBUTING.md`, `docs/security-strategy.md`, and `docs/release-strategy.md`
 - [ ] E2E QA is passing, or failures are unrelated and explained above

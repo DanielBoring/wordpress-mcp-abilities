@@ -1,6 +1,6 @@
 # GitHub Actions Automation Guide
 
-This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag-based release publishing. See [`docs/qa-strategy.md`](../docs/qa-strategy.md) for the teaching-oriented strategy guide, security QA policy, compatibility policy, and branch-protection recommendations.
+This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag-based release publishing. See [`docs/ci-cd-strategy.md`](../docs/ci-cd-strategy.md) for the automation strategy, [`docs/qa-strategy.md`](../docs/qa-strategy.md) for QA evidence, [`docs/security-strategy.md`](../docs/security-strategy.md) for security policy, and [`docs/release-strategy.md`](../docs/release-strategy.md) for release governance.
 
 ## Trigger map (event -> workflow -> behavior)
 
