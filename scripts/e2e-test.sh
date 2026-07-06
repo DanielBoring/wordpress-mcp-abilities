@@ -196,8 +196,8 @@ run_debug_log_check() {
 	fi
 
 	compose exec -T wordpress bash -lc "cat /var/www/html/wp-content/debug.log"
-	if compose exec -T wordpress bash -lc "grep -Eiq 'fatal error|parse error|uncaught|error' /var/www/html/wp-content/debug.log"; then
-		echo "Debug log contains fatal/error-level entries"
+	if compose exec -T wordpress bash -lc "grep -Eiq 'fatal error|parse error|uncaught|php (fatal error|parse error|warning|notice|deprecated)|deprecated|warning|notice|error' /var/www/html/wp-content/debug.log"; then
+		echo "Debug log contains WordPress/PHP problem entries"
 		return 1
 	fi
 }

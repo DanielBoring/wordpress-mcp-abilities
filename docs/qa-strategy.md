@@ -1,18 +1,46 @@
 # QA Strategy
 
-This repository uses QA as a set of layered confidence checks. Each layer answers a different question, from "does the PHP parse?" to "can a real MCP client change WordPress content through the adapter?"
+This repository uses layered QA for a public WordPress.org plugin. The goal is to catch the cheapest problems first, then add WordPress runtime, MCP transport, security, compatibility, and release-package evidence when a change can affect users, site data, permissions, or publishing.
 
-The goal is not to run every expensive check for every typo. The goal is to run the cheapest useful checks first, then run Docker and release checks when a change can affect runtime behavior or shipping.
+The plugin is now reviewed as a WordPress.org plugin, so QA must prove more than "the code runs." It must also prove ability permissions, object-level access, response privacy, WordPress compatibility, and package contents stay aligned with WordPress.org expectations.
 
-## The five QA layers
+## QA checks
 
-| Layer | Command | What it proves | When it should run |
+| GitHub Actions check | Command | What it proves | When it should run |
 | --- | --- | --- | --- |
-| Static QA | `composer qa:static` | PHP files parse, WordPress Coding Standards pass, PHPStan can analyze the plugin at the configured level, Composer dependencies have no known locked advisories, the E2E manifest is structurally valid, and the diff has no whitespace errors. | Every PR and every push to `main`. |
-| Unit Tests | `composer qa:unit` | Small pieces of PHP logic behave correctly without booting WordPress. These tests are the fast safety net for sanitization, response shape, and helper behavior. | Every PR and every push to `main`. |
-| Ability Contract QA | `composer qa:contract` or `bash scripts/e2e-test.sh contract` | WordPress boots in Docker, required plugins load, every registered ability is represented in `tests/e2e/abilities-manifest.json`, manifest cases execute through `wp_get_ability()->execute()`, and the debug log stays clean. | Runtime PRs, `main`, releases, and manual dispatch. |
-| Full MCP E2E QA | `composer qa:e2e` or `bash scripts/e2e-test.sh e2e` | A real MCP HTTP JSON-RPC session can discover and execute abilities through the MCP Adapter, including editor CRUD and subscriber denial. | Runtime PRs, `main`, releases, and manual dispatch. |
-| Release Package QA | `composer qa:release` or `bash scripts/release-qa.sh` | The version metadata is aligned, the release zip contains only packaged plugin files, and WordPress Plugin Check evaluates the built package instead of the development checkout. | Release PRs, tags, and manual dispatch. |
+| 1 - Static QA | `composer qa:static` | PHP files parse, WordPress Coding Standards pass, PHPStan can analyze the plugin at the configured level, Composer dependencies have no known locked advisories, the E2E manifest is structurally valid, security-sensitive QA policy checks pass, and the diff has no whitespace errors. | Every PR and every push to `main`. |
+| 2 - Unit Tests | `composer qa:unit` | Small pieces of PHP logic behave correctly without booting WordPress. These tests are the fast safety net for sanitization, response shape, permission helpers, SEO metadata normalization, taxonomy helpers, plugin safety logic, and failure paths. | Every PR and every push to `main`. |
+| 3 - Ability Contract QA | `composer qa:contract` or `bash scripts/e2e-test.sh contract` | WordPress boots in Docker, required plugins load, every registered ability is represented in `tests/e2e/abilities-manifest.json`, manifest cases execute through `wp_get_ability()->execute()`, permission-sensitive cases pass, and the debug log stays clean. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
+| 4 - Full MCP E2E QA | `composer qa:e2e` or `bash scripts/e2e-test.sh e2e` | A real MCP HTTP JSON-RPC session can discover and execute abilities through the MCP Adapter, including Application Password authentication, session setup, tool discovery, editor CRUD, and subscriber denial. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
+| 5 - Release Package QA | `composer qa:release` or `bash scripts/release-qa.sh` | Release metadata is aligned, Ability Contract QA and Full MCP E2E QA pass, the release zip contains only packaged plugin files, and WordPress Plugin Check evaluates the built package instead of the development checkout. | Release PRs, tags, and manual dispatch. |
+| 6 - Compatibility QA | `.github/workflows/compatibility-qa.yml` | Scheduled/manual Docker QA against the primary stack and a floating-latest PHP/WordPress image catches upstream drift in WordPress, PHP, MCP Adapter, Yoast SEO, SEOPress, and Plugin Check dependencies. | Weekly schedule, manual dispatch, release-candidate investigation, and upstream-breakage triage. |
+
+## Security QA policy
+
+Security QA is a cross-cutting gate, not just a separate scanner. The permission issue fixed in PR #90 showed that valid syntax, WPCS, and broad ability coverage are not enough unless the tests explicitly prove the permission model.
+
+For every new or changed `webmastery-site-toolkit-for-mcp/*` ability, review whether it is security-sensitive. An ability is security-sensitive when it does any of the following:
+
+- reads private, draft, pending, scheduled, trashed, user, environment, plugin, security, database, backup, or performance data
+- returns full object payloads, totals, author identity, login names, emails, backend versions, filesystem/plugin details, or other fingerprinting data
+- creates, updates, deletes, publishes, schedules, privates, restores, activates, deactivates, uploads, or otherwise changes site state
+- accepts object IDs, URLs, HTML, metadata keys, taxonomy terms, plugin identifiers, statuses, or role/capability-sensitive inputs
+
+Security-sensitive abilities must include:
+
+1. A positive manifest case for a role/capability that should be allowed.
+2. A negative manifest case for a role/capability that should be denied, unless the ability intentionally returns public-safe data and that rationale is documented.
+3. Object/status-aware assertions for list/query abilities that can return mixed authorization results.
+4. `assert_missing_paths` for sensitive fields that must not appear for lower-privilege callers.
+5. Failure-path assertions for status escalation, protected metadata, unsafe URLs, ambiguous identifiers, stale preconditions, and destructive actions where applicable.
+
+`composer validate:security-qa` enforces the current high-risk policy:
+
+- `permission_callback => '__return_true'` is blocked in plugin ability registrations unless intentionally allow-listed in the validator after explicit security review.
+- The permission-hardening regression cases from PR #90 must keep negative manifest coverage.
+- Sensitive identity and fingerprinting absence assertions must remain in the manifest.
+
+This validator is intentionally conservative. It should catch known dangerous patterns without replacing human review, WordPress.org review, or future deeper static analysis such as CodeQL or Semgrep.
 
 ## Ability Contract QA vs Full MCP E2E QA
 
@@ -22,44 +50,41 @@ Ability Contract QA is the plugin contract layer. It asks: "Inside WordPress, di
 
 Full MCP E2E QA is the real transport layer. It asks: "Can an MCP client actually talk to WordPress through the MCP Adapter and perform real work?" It is narrower but deeper, because it uses Application Passwords, MCP session initialization, `tools/list`, ability discovery, and real CRUD calls over HTTP JSON-RPC.
 
-Both layers matter. Contract QA catches broad ability drift. Full MCP E2E catches transport and integration problems that direct PHP execution cannot see.
+Both layers matter. Contract QA catches broad ability drift and permission regressions. Full MCP E2E catches transport and integration problems that direct PHP execution cannot see.
 
-## Possible future advanced QA layer
+## Trigger matrix
 
-An advanced MCP manifest replay layer could exercise selected or all `tests/e2e/abilities-manifest.json` cases through the real MCP Adapter HTTP JSON-RPC transport instead of direct `wp_get_ability()->execute()` calls.
+| Event or change type | 1 - Static QA | 2 - Unit Tests | 3 - Ability Contract QA | 4 - Full MCP E2E QA | 5 - Release Package QA | 6 - Compatibility QA |
+| --- | --- | --- | --- | --- | --- | --- |
+| Docs-only PR | Required | Required | Skipped unless manually dispatched | Skipped unless manually dispatched | Skipped | Skipped |
+| Runtime PR | Required | Required | Required | Required | Skipped unless release-impacting | Manual when compatibility-risky |
+| New or changed ability | Required | Required | Required | Required | Skipped unless release-impacting | Manual when dependency/version-risky |
+| Security-sensitive PR | Required | Required | Required | Required | Required when release-bound | Manual before release when risk is broad |
+| Push to `main` | Required | Required | Required when runtime files changed | Required when runtime files changed | Skipped | Scheduled/manual |
+| Release PR | Required | Required | Required | Required | Required | Manual for release candidates |
+| Tag `v*` | Covered by release workflow setup and prior PR checks | Covered by prior PR checks | Covered by Release Package QA | Covered by Release Package QA | Required | Covered by scheduled/manual release-candidate run |
+| `workflow_dispatch` | Runs selected workflow | Runs selected workflow | Runs | Runs | Runs | Runs |
+| Weekly schedule | Skipped | Skipped | Skipped | Skipped | Skipped | Runs |
 
-This would answer a stronger question than the current Full MCP E2E QA: "Can the same ability cases that pass inside WordPress also pass when invoked by a real MCP client through `mcp-adapter-execute-ability`?"
-
-This should remain separate from the default Full MCP E2E QA unless the project needs deeper transport coverage. Replaying the full manifest over MCP would be slower and more brittle than Ability Contract QA, and it would duplicate much of the same behavioral coverage. A future implementation could use a dedicated command such as `composer qa:mcp-manifest` or `bash scripts/e2e-test.sh mcp-manifest`, with options to run a focused subset for changed abilities and a full replay for release candidates or manual investigations.
-
-## GitHub Actions trigger matrix
-
-| Event or change type | Static QA | Unit Tests | Ability Contract QA | Full MCP E2E QA | Release Package QA |
-| --- | --- | --- | --- | --- | --- |
-| Docs-only PR | Required | Required | Skipped unless manually dispatched | Skipped unless manually dispatched | Skipped |
-| Runtime PR | Required | Required | Required | Required | Skipped unless release-impacting |
-| Push to `main` | Required | Required | Required when runtime files changed | Required when runtime files changed | Skipped |
-| Release PR | Required | Required | Required | Required | Required |
-| Tag `v*` | Optional through previous PR checks | Optional through previous PR checks | Covered by release QA | Covered by release QA | Required |
-| `workflow_dispatch` | Runs selected workflow | Runs selected workflow | Runs | Runs | Runs |
-
-Runtime-impacting paths include plugin source, tests, scripts, Docker configuration, Composer files, workflow files, package metadata, and `readme.txt`.
+Runtime-impacting paths include plugin source, tests, scripts, Docker configuration, Composer files, workflow files, package metadata, assets, and `readme.txt`.
 
 ## Branch protection recommendation
 
 Require these checks before merging any PR:
 
-- `Static QA`
-- `Unit Tests`
+- `1 - Static QA`
+- `2 - Unit Tests`
 
-Require these checks before merging runtime-impacting PRs:
+Require these checks before merging runtime-impacting, ability, or security-sensitive PRs:
 
-- `Ability Contract QA`
-- `Full MCP E2E QA`
+- `3 - Ability Contract QA`
+- `4 - Full MCP E2E QA`
 
 Require release/package QA before publishing a release:
 
-- `Release Package QA`
+- `5 - Release Package QA`
+
+Use `6 - Compatibility QA` as a scheduled/manual maintainer gate at first. Promote individual compatibility jobs to required only after they are stable and low-noise.
 
 The important GitHub concept is "required status checks." A workflow can run on many events, but branch protection decides which successful checks are required before a PR can merge.
 
@@ -87,14 +112,23 @@ E2E_MANAGE_COMPOSE=1 composer qa:contract
 E2E_MANAGE_COMPOSE=1 composer qa:e2e
 ```
 
+For a security-sensitive change:
+
+```bash
+composer qa
+composer validate:security-qa
+E2E_MANAGE_COMPOSE=1 composer qa:contract
+E2E_MANAGE_COMPOSE=1 composer qa:e2e
+```
+
 For release preparation:
 
 ```bash
 composer qa
-E2E_MANAGE_COMPOSE=1 composer qa:contract
-E2E_MANAGE_COMPOSE=1 composer qa:e2e
 composer qa:release
 ```
+
+`composer qa:release` runs the Docker contract and transport checks before Plugin Check. If Docker is unavailable locally, use GitHub Actions for the authoritative release validation and document the local blocker in the PR.
 
 PowerShell users can use the local wrapper:
 
@@ -114,6 +148,33 @@ scripts/qa-local.sh --e2e
 scripts/qa-local.sh --release
 ```
 
+## WordPress.org release-readiness policy
+
+Before publishing a WordPress.org-facing release:
+
+1. Confirm version metadata matches across the plugin header, `readme.txt` stable tag, changelog, release notes, zip name, and tag.
+2. Run `composer qa` and `composer qa:release`.
+3. Confirm Plugin Check evaluates the built package under the canonical `webmastery-site-toolkit-for-mcp` slug.
+4. Confirm no unexpected WordPress debug-log warnings, notices, deprecations, or errors appear during Docker QA.
+5. Confirm security-sensitive changes have manifest evidence for allowed and denied access.
+6. Run or review the latest `6 - Compatibility QA` result before uploading a release candidate to WordPress.org.
+7. Document any known Plugin Check warnings or unavailable local tooling in the PR.
+
+## Compatibility policy
+
+The default PR path should stay stable and reasonably fast. Compatibility QA starts as scheduled/manual coverage because upstream images, plugin versions, and dependency repositories can change independently of a PR.
+
+The current compatibility workflow runs:
+
+- the primary Docker stack used by default QA
+- a floating-latest WordPress image on a newer PHP runtime
+
+When compatibility failures occur, triage them as:
+
+- **release blocker** when the failure affects the supported primary stack or a supported WordPress/PHP combination
+- **upstream drift** when a floating-latest dependency changed and the plugin needs an adjustment or documented compatibility boundary
+- **workflow maintenance** when the failure is caused by runner/image/tooling changes unrelated to plugin behavior
+
 ## Environment notes
 
 The QA layers are the same in every environment, but the safest entrypoint differs by shell.
@@ -122,7 +183,7 @@ The QA layers are the same in every environment, but the safest entrypoint diffe
 
 GitHub Actions is the authoritative validation gate before merge. The workflows install their own PHP and Composer runtime, use Ubuntu shell tools, and run Docker jobs on GitHub-hosted Linux runners.
 
-Use branch protection to require the relevant workflow checks instead of relying only on a contributor's local machine. At minimum, require Static QA and Unit Tests for every PR. For runtime-impacting PRs, require Ability Contract QA and Full MCP E2E QA.
+Use branch protection to require the relevant workflow checks instead of relying only on a contributor's local machine.
 
 ### Windows PowerShell
 
@@ -157,104 +218,16 @@ Docker Desktop must be running before Docker QA can start. WordPress, MCP Adapte
 
 Local Plugin Check output may include known warnings that are acceptable for this project. The release process should treat unexpected errors as blockers, while the documented warnings in `CONTRIBUTING.md` remain known review items.
 
-## Execution appendix
-
-Use this appendix to sequence QA improvements without turning every PR into a large infrastructure change. Each phase should land as a small PR with updated commands, workflows, documentation, and repository changelog entries.
-
-### Phase 0: keep the strategy and implementation aligned
-
-Before adding new QA depth, confirm the documented layers match the commands and workflows that exist in the repository.
-
-1. Reconcile release coverage: either make `scripts/release-qa.sh` run Full MCP E2E QA or update the trigger matrix so tag releases do not claim Full MCP E2E is covered by release QA.
-2. Keep `composer.json`, `scripts/qa-local.sh`, `scripts/qa-local.ps1`, GitHub Actions, and this document in sync whenever a QA command is renamed or split.
-3. Keep `.github/PULL_REQUEST_TEMPLATE.md` and `CONTRIBUTING.md` aligned with the QA commands contributors are expected to run.
-
-Exit criteria:
-
-- The command table, trigger matrix, local wrapper flags, and CI workflow names describe the same QA layers.
-- A maintainer can follow the release-preparation commands without needing undocumented steps.
-
-### Phase 1: harden the fast checks
-
-The fast checks should catch syntax, standards, type, dependency, and small helper regressions before Docker starts.
-
-1. Expand unit coverage beyond the initial helper tests to cover sanitization, response shape helpers, SEO metadata normalization, plugin safety logic, taxonomy helpers, and permission-denial result shapes.
-2. Add focused tests for failure paths, not only happy paths: invalid IDs, unsupported enum values, protected meta keys, ambiguous block targets, missing plugins, and denied capabilities.
-3. Raise PHPStan strictness gradually. Start from the current baseline, fix high-signal findings, then increase levels only when the new level is practical for day-to-day PRs.
-4. Consider adding CodeQL or Semgrep as a separate security-analysis workflow once PHPStan and Composer audit are stable.
-
-Exit criteria:
-
-- `composer qa` stays fast enough for every PR.
-- Unit tests cover representative logic from multiple ability groups.
-- Static QA failures are actionable and do not rely on broad ignored-error lists.
-
-### Phase 2: deepen Docker contract and transport coverage
-
-The Docker layers should prove WordPress integration and MCP transport behavior without duplicating every assertion in every layer.
-
-1. Keep Ability Contract QA broad: every registered ability must have manifest coverage, with positive and negative cases where permissions apply.
-2. Keep Full MCP E2E QA narrow but deep: it should prove real MCP Adapter session setup, tool discovery, ability execution, side effects, and denied-role propagation.
-3. Add the optional MCP manifest replay layer only when the project needs stronger transport coverage for selected abilities. Prefer focused replay for changed abilities and reserve full replay for release candidates or manual investigations.
-4. Improve artifacts by writing machine-readable summaries for both contract and transport runs, and upload them on failure.
-
-Exit criteria:
-
-- Contract failures identify ability, role, expected result, and assertion context.
-- Transport failures identify the MCP phase that failed: initialize, tools/list, discover, execute, side effect, denial, or cleanup.
-- Full MCP manifest replay remains optional and does not slow the default PR path.
-
-### Phase 3: add compatibility and dependency confidence
-
-Compatibility checks should run where they add signal without blocking routine PRs for unrelated matrix noise.
-
-1. Add a scheduled or manual compatibility workflow for supported PHP versions, current and minimum supported WordPress versions, and relevant database variants.
-2. Keep the default PR path on the minimum supported PHP version plus the primary Docker stack so compatibility regressions are caught early without excessive runtime.
-3. Add a floating-latest scheduled run for WordPress, MCP Adapter, Yoast SEO, SEOPress, and Plugin Check so upstream changes are detected before release week.
-4. Document which compatibility failures are release blockers and which require triage before being made required checks.
-
-Exit criteria:
-
-- Required PR checks remain stable and reasonably fast.
-- Scheduled compatibility checks expose upstream or version-specific breakage with enough context to reproduce locally.
-
-### Phase 4: scale E2E maintainability
-
-As the ability count grows, split large E2E surfaces by purpose instead of making one monolithic runner absorb every case.
-
-1. Group manifest cases by ability domain, such as posts/pages, custom post types, taxonomy, media, comments, SEO, diagnostics, plugins, and site introspection.
-2. Add runner filters for ability group, ability name, or manifest label so maintainers can reproduce focused failures locally.
-3. Consider CI sharding only after group filters exist and the full contract run becomes slow enough to justify parallel jobs.
-4. Preserve a full contract run for release candidates and manual dispatch even if PR checks become selective.
-
-Exit criteria:
-
-- A maintainer can run one affected ability group locally without editing the manifest.
-- CI can report which ability group failed.
-- Full release coverage remains available.
-
-### Phase 5: add advanced quality signals only where they pay off
-
-Coverage and mutation metrics are useful when applied to security-sensitive or heavily reused logic, but they should not become vanity gates.
-
-1. Add coverage reporting for unit tests after the fast unit layer has meaningful breadth.
-2. Set thresholds only for critical helper areas that are stable enough to support thresholds.
-3. Consider mutation testing for sanitization, capability, and response-shape helpers if ordinary coverage stops finding meaningful gaps.
-4. Treat new metrics as advisory first, then promote them to required gates only after they are stable and low-noise.
-
-Exit criteria:
-
-- Coverage reports help guide missing tests rather than blocking unrelated work.
-- Mutation testing, if added, is scoped to high-value code and can run manually or on schedule.
-
 ## How to read failures
 
-Static QA failures usually mean the code has a syntax, style, static-analysis, manifest-shape, dependency-audit, or whitespace problem. Fix these first because they are the cheapest.
+Static QA failures usually mean the code has a syntax, style, static-analysis, manifest-shape, security-policy, dependency-audit, or whitespace problem. Fix these first because they are the cheapest.
 
 Unit test failures usually mean a small helper contract changed. Either fix the behavior or intentionally update the test if the contract changed.
 
-Ability Contract QA failures usually mean the plugin and manifest disagree, a permission case is wrong, an ability response shape changed, or WordPress logged an error.
+Ability Contract QA failures usually mean the plugin and manifest disagree, a permission case is wrong, an ability response shape changed, an expected sensitive field appeared, or WordPress logged a problem.
 
-Full MCP E2E failures usually mean the real MCP Adapter path broke: session setup, tool discovery, ability execution, WordPress side effects, or denied-role behavior.
+Full MCP E2E failures usually mean the real MCP Adapter path broke: session setup, tool discovery, ability execution, WordPress side effects, denied-role behavior, or cleanup.
 
-Release Package QA failures usually mean the package is not ready to ship: version metadata is out of sync, release notes are missing, dev files leaked into the zip, or Plugin Check found a WordPress.org readiness issue.
+Release Package QA failures usually mean the package is not ready to ship: Docker contract/transport checks failed, version metadata is out of sync, release notes are missing, dev files leaked into the zip, or Plugin Check found a WordPress.org readiness issue.
+
+Compatibility QA failures usually mean upstream WordPress, PHP, MySQL, MCP Adapter, Yoast SEO, SEOPress, Plugin Check, or GitHub runner behavior changed and needs maintainer triage.

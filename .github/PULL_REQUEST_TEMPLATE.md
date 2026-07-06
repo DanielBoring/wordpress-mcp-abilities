@@ -9,11 +9,12 @@
 
 ## Testing
 <!-- How did you verify this works? Include local QA commands such as composer qa, scripts/qa-local.sh --contract, scripts/qa-local.sh --e2e, scripts/qa-local.ps1 -Contract, scripts/qa-local.ps1 -E2E, or scripts/qa-local.ps1 -PreflightOnly, plus any manual ability calls and what they returned. See docs/qa-strategy.md for which command fits each change type. -->
-<!-- Static QA and Unit Tests run automatically on every PR. Docker QA runs automatically for runtime-impacting changes. -->
+<!-- 1 - Static QA and 2 - Unit Tests run automatically on every PR. 3 - Ability Contract QA and 4 - Full MCP E2E QA run automatically for runtime-impacting changes. -->
 
 ## Checklist
 - [ ] Capability checks use the narrowest relevant WordPress capability and return/surface `WP_Error` on failure
 - [ ] List/query abilities filter returned objects with object/status-aware checks and do not leak unauthorized totals or sensitive identity fields
+- [ ] Security-sensitive abilities include allowed and denied E2E manifest cases, plus `assert_missing_paths` for fields hidden from lower-privilege callers
 - [ ] Inputs are sanitized or validated (`sanitize_text_field`, `sanitize_key`, `absint`, `wp_kses_post`, enum validation, or an equivalent WordPress API)
 - [ ] Ability responses follow the existing success/error shape for the affected ability group
 - [ ] New ability names use the `webmastery-site-toolkit-for-mcp/` prefix and set accurate `annotations` (`readonly`, `destructive`, `idempotent`)
@@ -22,5 +23,6 @@
 - [ ] Plugin-facing changes update `CHANGELOG.md` under `## Unreleased`
 - [ ] Repository, CI, contributor, GitHub platform, template, or agent workflow changes update `.github/REPOSITORY_CHANGELOG.md` under `## Unreleased`
 - [ ] Local QA checked with `composer qa` and the relevant Docker/release QA wrapper from `docs/qa-strategy.md`, or the missing tool/blocker is documented above
+- [ ] Compatibility QA was considered for release candidates, dependency-sensitive changes, or WordPress/PHP support changes
 - [ ] WordPress.org Detailed Plugin Guidelines were considered for public-facing or release-impacting changes such as naming, readme text, privacy/external calls, licensing, bundled assets, and release packaging
 - [ ] E2E QA is passing, or failures are unrelated and explained above

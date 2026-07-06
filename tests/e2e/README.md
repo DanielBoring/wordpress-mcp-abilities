@@ -18,6 +18,8 @@ For abilities with role or capability restrictions, include both:
 1. A positive case for a role that should be allowed.
 2. A negative case for a role that should be denied.
 
+For security-sensitive abilities, also include any assertions needed to prove the response does not leak data. Examples include `assert_missing_paths` for login names, emails, backend versions, protected metadata, private/trash totals, or other fields that lower-privilege users must not see. `composer validate:security-qa` enforces the current high-risk permission-hardening cases that protect against regressions like the WordPress.org review findings fixed in PR #90.
+
 ## What CI checks
 
 `scripts/e2e-test.sh contract` runs `tests/e2e/ability-runner.php`, which:
@@ -48,9 +50,10 @@ For quick local checks that do not require WordPress, run:
 
 ```bash
 composer validate:e2e-manifest
+composer validate:security-qa
 ```
 
-This validates manifest JSON structure, required fields, allowed roles, expected result values, labels, and assertion shapes. It cannot replace full E2E coverage because it does not bootstrap WordPress or compare the manifest to `wp_get_abilities()`.
+These commands validate manifest JSON structure, required fields, allowed roles, expected result values, labels, assertion shapes, required security-sensitive coverage, and risky static permission callback patterns. They cannot replace full E2E coverage because they do not bootstrap WordPress or compare the manifest to `wp_get_abilities()`.
 
 For Docker Ability Contract QA, either start Compose yourself and run:
 

@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.0.36
+    image: ${MYSQL_IMAGE:-mysql:8.0.36}
     environment:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wp
@@ -14,7 +14,7 @@ services:
       retries: 10
 
   wordpress:
-    image: wordpress:7.0-php8.2-apache
+    image: ${WORDPRESS_IMAGE:-wordpress:7.0-php8.2-apache}
     depends_on:
       mysql:
         condition: service_healthy

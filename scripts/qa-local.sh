@@ -16,7 +16,7 @@ Runs local preflight QA:
   - composer qa (static + unit)
   - optional Docker Ability Contract QA
   - optional Docker Full MCP E2E QA
-  - optional Release Package QA
+  - optional Release Package QA, including Docker contract/transport checks and Plugin Check
 
 Options:
   --contract        run managed Docker Ability Contract QA

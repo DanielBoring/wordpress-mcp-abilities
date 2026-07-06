@@ -1,18 +1,19 @@
 # GitHub Actions Automation Guide
 
-This repository uses GitHub Actions for five QA layers plus tag-based release publishing. See [`docs/qa-strategy.md`](../docs/qa-strategy.md) for the teaching-oriented strategy guide and branch-protection recommendations.
+This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag-based release publishing. See [`docs/qa-strategy.md`](../docs/qa-strategy.md) for the teaching-oriented strategy guide, security QA policy, compatibility policy, and branch-protection recommendations.
 
 ## Trigger map (event -> workflow -> behavior)
 
 | Event | Workflow file | Behavior |
 |------|------|------|
-| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/coding-standards.yml` | Runs Static QA on every PR. |
-| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/unit-tests.yml` | Runs PHPUnit unit tests on every PR. |
-| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/e2e-qa.yml` | Detects runtime-impacting files, then runs Ability Contract QA and Full MCP E2E QA when in scope. |
-| release-impacting `pull_request` or `workflow_dispatch` | `.github/workflows/release-package-qa.yml` | Builds and validates the release package without publishing a GitHub release. |
-| `push` to `main` or `develop` | Static, unit, and Docker QA workflows | Re-runs the appropriate checks after merge. |
+| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/coding-standards.yml` | Runs `1 - Static QA` on every PR. |
+| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/unit-tests.yml` | Runs `2 - Unit Tests` on every PR. |
+| `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/e2e-qa.yml` | Detects runtime-impacting files, then runs `3 - Ability Contract QA` and `4 - Full MCP E2E QA` when in scope. |
+| release-impacting `pull_request` or `workflow_dispatch` | `.github/workflows/release-package-qa.yml` | Runs `5 - Release Package QA` without publishing a GitHub release. |
+| `schedule` or `workflow_dispatch` | `.github/workflows/compatibility-qa.yml` | Runs `6 - Compatibility QA` against the primary and floating-latest Docker stacks. |
+| `push` to `main` or `develop` | Static, unit, and Docker QA workflows | Re-runs the appropriate numbered checks after merge. |
 | `workflow_dispatch` | Static, unit, Docker, or release workflows | Runs the selected QA layer on demand. |
-| `push` tag `v*` | `.github/workflows/release.yml` | Runs Release Package QA, then publishes a GitHub release. |
+| `push` tag `v*` | `.github/workflows/release.yml` | Runs `5 - Release Package QA`, including contract and transport Docker QA, then publishes a GitHub release. |
 
 ## Workflow details
 
@@ -39,12 +40,14 @@ This repository uses GitHub Actions for five QA layers plus tag-based release pu
 - CI fails when registered abilities are not covered by the manifest.
 - CI fails when manifest entries reference abilities that are no longer registered.
 - For permission-sensitive abilities, include both allowed and denied role cases where practical.
+- Security-sensitive abilities must keep negative cases and sensitive-field absence assertions required by `composer validate:security-qa`.
 - See `tests/e2e/README.md` for the manifest format and update rules.
 
 **Security model**
 - E2E execution jobs run with read-only permissions.
 - PR commenting is isolated to a dedicated job with comment-only write scope and no repository checkout.
 - Actions are pinned to immutable SHAs.
+- Static QA blocks risky `permission_callback => '__return_true'` ability registrations unless they are explicitly reviewed and allow-listed.
 
 ### Release (`release.yml`)
 
@@ -52,7 +55,7 @@ This repository uses GitHub Actions for five QA layers plus tag-based release pu
 1. Trigger on tag push matching `v*`.
 2. Validate `tag version == plugin header version == readme stable tag`.
 3. Verify plugin release notes exist in `readme.txt` for the tagged version.
-4. Run `scripts/release-qa.sh` to build the plugin ZIP, validate required/forbidden contents, and run WordPress Plugin Check against the built package.
+4. Run `scripts/release-qa.sh` to run contract and transport Docker QA, build the plugin ZIP, validate required/forbidden contents, and run WordPress Plugin Check against the built package.
 5. Fail if a release for the same tag already exists.
 6. Publish release with notes from `readme.txt`.
 
@@ -75,4 +78,6 @@ The E2E bootstrap installs and activates Yoast SEO and SEOPress from WordPress.o
 
 ## Branch protection recommendation
 
-Require Static QA and Unit Tests before every merge. Require Ability Contract QA and Full MCP E2E QA before merging runtime-impacting PRs.
+Require `1 - Static QA` and `2 - Unit Tests` before every merge. Require `3 - Ability Contract QA` and `4 - Full MCP E2E QA` before merging runtime-impacting PRs.
+
+Keep `6 - Compatibility QA` scheduled/manual until the matrix is stable enough to promote selected jobs to branch protection.

@@ -1,4 +1,4 @@
-name: Release Package QA
+name: 5 - Release Package QA
 
 on:
   workflow_dispatch:
@@ -7,18 +7,23 @@ on:
     paths:
       - '.github/workflows/release.yml'
       - '.github/workflows/release-package-qa.yml'
+      - 'docker-compose.yml'
+      - 'scripts/e2e-test.sh'
       - 'scripts/build-release.sh'
       - 'scripts/release-qa.sh'
       - 'scripts/validate-release-package.php'
+      - 'tests/e2e/**'
       - 'webmastery-site-toolkit-for-mcp.php'
+      - 'includes/**'
       - 'readme.txt'
       - 'CHANGELOG.md'
       - 'LICENSE'
 
 jobs:
   release-package-qa:
+    name: 5 - Release Package QA
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
     permissions:
       contents: read
 
