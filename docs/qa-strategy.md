@@ -4,6 +4,12 @@ This repository uses layered QA for a public WordPress.org plugin. The goal is t
 
 The plugin is now reviewed as a WordPress.org plugin, so QA must prove more than "the code runs." It must also prove ability permissions, object-level access, response privacy, WordPress compatibility, and package contents stay aligned with WordPress.org expectations.
 
+Related strategy guides:
+
+- [`ci-cd-strategy.md`](ci-cd-strategy.md) explains GitHub Actions automation, branch protection, workflow permissions, schedules, artifacts, and failure handling.
+- [`security-strategy.md`](security-strategy.md) explains the WordPress plugin threat model, ability permission policy, secrets, dependency security, and vulnerability response.
+- [`release-strategy.md`](release-strategy.md) explains versioning, release readiness, GitHub releases, WordPress.org SVN publishing, hotfixes, and rollback policy.
+
 ## QA checks
 
 | GitHub Actions check | Command | What it proves | When it should run |
@@ -157,8 +163,11 @@ Before publishing a WordPress.org-facing release:
 3. Confirm Plugin Check evaluates the built package under the canonical `webmastery-site-toolkit-for-mcp` slug.
 4. Confirm no unexpected WordPress debug-log warnings, notices, deprecations, or errors appear during Docker QA.
 5. Confirm security-sensitive changes have manifest evidence for allowed and denied access.
-6. Run or review the latest `6 - Compatibility QA` result before uploading a release candidate to WordPress.org.
-7. Document any known Plugin Check warnings or unavailable local tooling in the PR.
+6. Review the official [WordPress.org Detailed Plugin Guidelines](https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/) for release-impacting changes, especially licensing, bundled assets, external services, tracking consent, executable remote code, readme content, default WordPress libraries, SVN discipline, version increments, and trademarks.
+7. Run or review the latest `6 - Compatibility QA` result before uploading a release candidate to WordPress.org.
+8. Document any known Plugin Check warnings, guideline considerations, or unavailable local tooling in the PR.
+
+Plugin Check supports the guideline review, but it does not replace maintainer responsibility for the final WordPress.org package contents and behavior.
 
 ## Compatibility policy
 

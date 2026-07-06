@@ -8,6 +8,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Added
 
+- Added CI/CD, security, and release strategy guides with official GitHub and WordPress references for maintainers operating the approved WordPress.org plugin.
 - Added E2E manifest fixtures and missing-path assertions for permission hardening coverage, including filtered private/trash list results and sensitive identity-field absence checks.
 - Added a layered QA strategy guide, PHPUnit/PHPStan QA commands, unit-test scaffolding, and separate GitHub Actions lanes for Static QA, Unit Tests, Ability Contract QA, Full MCP E2E QA, and Release Package QA.
 - Added environment-specific QA notes for GitHub Actions, Windows PowerShell, and Windows Git Bash.
@@ -26,6 +27,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Changed
 
+- Expanded repo governance documentation so the official WordPress.org Detailed Plugin Guidelines are explicitly mapped to QA release readiness, security/privacy review, release strategy, contributor guidance, and PR review.
 - Numbered the GitHub Actions workflow and job display names with `# -` prefixes so required checks align with the QA strategy guide.
 - Matured the QA strategy for the approved WordPress.org plugin by documenting security-sensitive ability coverage, compatibility triage, stricter debug-log expectations, and release transport coverage.
 - Updated Release Package QA to run both Ability Contract QA and Full MCP E2E QA before package validation and Plugin Check.
