@@ -1,6 +1,6 @@
 === Webmastery Site Toolkit for MCP ===
 Contributors: deboring
-Tags: mcp, ai, automation, content-management, artificial-intelligence
+Tags: mcp, ai, automation, content-management, claude
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 8.0
@@ -9,11 +9,11 @@ License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://paypal.me/VirtuallyBoring
 
-Adds MCP-powered WordPress abilities for content, media, SEO, audits, comments, plugins, users, health, and security.
+70+ permission-aware WordPress abilities for AI agents: content, media, SEO, audits, users, health, and security via the official MCP Adapter.
 
 == Description ==
 
-Webmastery Site Toolkit for MCP adds WordPress abilities that AI agents and MCP clients can call through the official [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin.
+Webmastery Site Toolkit for MCP adds **70+ permission-aware abilities across 16 areas** that AI agents and MCP clients can call through the official [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin. It works with popular MCP clients including Claude, ChatGPT, GitHub Copilot, and Gemini.
 
 The MCP Adapter provides the transport layer. This plugin provides the site-management vocabulary: posts, pages, media, comments, taxonomy, custom post types, post meta, content hygiene, SEO checks, public webmaster verification, site info, health, security, users, plugins, database, performance, and backup status.
 
@@ -47,6 +47,10 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 7. Ask your MCP client to call `mcp-adapter-discover-abilities` and confirm the `webmastery-site-toolkit-for-mcp/*` abilities appear.
 
 == Frequently Asked Questions ==
+
+= Which AI clients and MCP hosts work with this? =
+
+Any MCP client that can reach your site through the MCP Adapter works. This includes Claude (Desktop and Code), ChatGPT, GitHub Copilot, Gemini CLI, Windsurf, and Codex. Most local clients connect through the `@automattic/mcp-wordpress-remote` bridge.
 
 = Does this work without the MCP Adapter plugin? =
 

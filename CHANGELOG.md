@@ -6,6 +6,15 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 
 ## Unreleased
 
+### Added
+
+- Added a readme.txt FAQ entry covering which AI clients and MCP hosts work with the plugin.
+
+### Changed
+
+- Updated the readme.txt short description and Description section to lead with the 70+ permission-aware ability count across 16 areas and to note supported MCP clients.
+- Updated the WordPress.org plugin tags to `mcp, ai, automation, content-management, claude`.
+
 ## 2.4.1
 
 ### Changed
