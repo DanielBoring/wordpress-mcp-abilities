@@ -211,6 +211,8 @@ This project follows **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
 - **MINOR** (`1.X.0`) — new backward-compatible abilities or features.
 - **PATCH** (`1.4.X`) — backward-compatible bug fixes, security fixes, and documentation-only corrections.
 
+Git tags use `vX.Y.Z`. WordPress.org SVN tags use `X.Y.Z`. Every user-facing code release, including patch releases, should go through the protected WordPress.org SVN deployment path after release QA passes. Cosmetic readme or Plugin Directory asset updates do not require a code version bump.
+
 Release checklist:
 
 1. Choose the version bump based on the rules above.
@@ -220,7 +222,9 @@ Release checklist:
 5. Confirm the generated zip uses the `webmastery-site-toolkit-for-mcp` directory slug.
 6. Run the official WordPress Plugin Check utility against the generated `webmastery-site-toolkit-for-mcp` package and confirm there are no unexpected errors.
 7. Review the latest scheduled/manual `6 - Compatibility QA` result for upstream WordPress/PHP/plugin dependency drift.
-8. Tag and push `vX.Y.Z` to trigger the release workflow.
+8. Confirm the protected `wordpress-org` GitHub Environment and `SVN_USERNAME` / `SVN_PASSWORD` GitHub Actions secrets are configured.
+9. Tag and push `vX.Y.Z` to trigger the release workflow.
+10. Approve the protected WordPress.org deployment after release QA passes.
 
 ---
 
@@ -233,9 +237,10 @@ See [`docs/release-strategy.md`](docs/release-strategy.md) for the complete rele
 3. Add release notes to `readme.txt` under `== Changelog ==` and `== Upgrade Notice ==`
 4. Commit: `git commit -m "chore: release v1.x.x"`
 5. Tag and push: `git tag v1.x.x && git push origin v1.x.x`
-6. GitHub Actions runs contract, transport, package, and Plugin Check validation, then creates the release automatically
-7. Download the zip from the release and verify Plugin Check evaluates it as the `webmastery-site-toolkit-for-mcp` slug
-8. Upload the verified package to the WordPress.org SVN
+6. GitHub Actions runs contract, transport, package, and Plugin Check validation
+7. Approve the protected `wordpress-org` environment when the validated tag should publish to WordPress.org
+8. GitHub Actions deploys the curated build directory to WordPress.org SVN and creates the GitHub Release automatically
+9. Verify the WordPress.org Plugin Directory page updates as expected
 
 ### Plugin Check notes
 

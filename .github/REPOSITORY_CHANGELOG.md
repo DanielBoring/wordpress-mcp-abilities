@@ -8,6 +8,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Added
 
+- Added protected WordPress.org SVN deployment to the tag-based release workflow, including pinned action usage, GitHub Actions secret guidance, SemVer/SVN tag policy, and full release documentation coverage.
 - Added CI/CD, security, and release strategy guides with official GitHub and WordPress references for maintainers operating the approved WordPress.org plugin.
 - Added E2E manifest fixtures and missing-path assertions for permission hardening coverage, including filtered private/trash list results and sensitive identity-field absence checks.
 - Added a layered QA strategy guide, PHPUnit/PHPStan QA commands, unit-test scaffolding, and separate GitHub Actions lanes for Static QA, Unit Tests, Ability Contract QA, Full MCP E2E QA, and Release Package QA.

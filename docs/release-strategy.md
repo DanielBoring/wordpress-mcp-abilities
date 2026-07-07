@@ -21,6 +21,21 @@ This project uses semantic versioning:
 
 Security fixes can be patch releases when the public API remains compatible.
 
+GitHub release tags use `vX.Y.Z`. WordPress.org SVN release tags use `X.Y.Z` because WordPress.org recommends numeric Subversion tag names containing only numbers and periods. Every user-facing code release, including patch releases, should be eligible for WordPress.org SVN deployment after release QA passes.
+
+Readme-only or Plugin Directory asset-only updates do not require a plugin version bump when they are cosmetic and do not ship code changes. Avoid using SVN commits as routine documentation churn; WordPress.org treats SVN as a release repository.
+
+## Release cadence
+
+Releases are readiness-based, not calendar-based:
+
+| Release need | Policy |
+| --- | --- |
+| Security fix or serious user-impacting bug | Publish a patch release as soon as the fix passes release QA. |
+| Normal bug fixes or backward-compatible features | Batch into intentional patch or minor releases when there is user-facing value. |
+| Compatibility/readme-only update | Publish only when needed; do not force a code release for cosmetic readme or listing asset changes. |
+| Internal repository, CI, or contributor workflow changes | Do not publish a plugin release unless packaged plugin behavior or user-facing documentation changes. |
+
 ## Release readiness checklist
 
 Before tagging a release:
@@ -35,15 +50,18 @@ Before tagging a release:
 8. Run or confirm `composer qa:release`.
 9. Review the latest `6 - Compatibility QA` result for upstream drift.
 10. Confirm no unexpected Plugin Check findings remain.
+11. Confirm the `wordpress-org` GitHub Environment approval gate and SVN secrets are configured before pushing a release tag that should publish to WordPress.org.
 
-## GitHub release flow
+## Tag release flow
 
-The tag workflow owns GitHub release creation:
+The tag workflow owns release validation, WordPress.org SVN deployment, and GitHub release creation:
 
 1. Maintainer pushes `vX.Y.Z`.
 2. `.github/workflows/release.yml` validates the tag, plugin header, stable tag, text domain, short description, release notes, and duplicate release state.
 3. `scripts/release-qa.sh` runs Ability Contract QA and Full MCP E2E QA, builds the release zip, validates package contents, and runs WordPress Plugin Check.
-4. GitHub release is created with the built zip and notes from `readme.txt`.
+4. The workflow waits for approval in the protected `wordpress-org` GitHub Environment.
+5. After approval, the workflow deploys the validated plugin code to WordPress.org SVN.
+6. GitHub release is created with the built zip and notes from `readme.txt`.
 
 Do not manually upload an unvalidated zip to GitHub releases.
 
@@ -51,16 +69,36 @@ Do not manually upload an unvalidated zip to GitHub releases.
 
 WordPress.org uses SVN as the release repository. GitHub remains the development repository.
 
-Recommended process:
+Automated process:
 
-1. Download the GitHub release zip after the tag workflow passes.
-2. Inspect or extract the package if needed.
-3. Commit finished release files to WordPress.org SVN `trunk`.
-4. Copy or tag the release to the matching SVN `tags/X.Y.Z` path.
-5. Confirm `Stable tag` points to the intended release.
-6. Verify the WordPress.org plugin page updates as expected.
+1. The release workflow builds the curated package directory at `build/webmastery-site-toolkit-for-mcp`.
+2. The protected `wordpress-org` environment gates access to the real SVN publish step.
+3. `10up/action-wordpress-plugin-deploy` deploys the contents of `build/webmastery-site-toolkit-for-mcp` to SVN `trunk`.
+4. The deploy action copies `trunk` to the matching SVN `tags/X.Y.Z` path.
+5. The workflow creates the GitHub Release after SVN deployment succeeds.
+6. Maintainers verify the WordPress.org plugin page updates as expected.
 
 Avoid frequent small SVN commits. WordPress.org guidance treats SVN as a release repository, not the day-to-day development repository.
+
+WordPress.org SVN is production. There is no separate WordPress.org test SVN for this plugin. Use pull request QA, `5 - Release Package QA`, optional manual compatibility checks, staging WordPress installs, and the protected environment approval gate before publishing.
+
+### GitHub environment and secrets
+
+Use a protected GitHub Environment named `wordpress-org` for real SVN publishing.
+
+Recommended settings:
+
+1. Require manual approval before jobs in the environment run.
+2. Add GitHub Actions secrets named `SVN_USERNAME` and `SVN_PASSWORD`.
+3. Prefer environment-scoped secrets on `wordpress-org` so credentials are only available after approval.
+4. Use repository-level GitHub Secrets only if environment secrets are not available; keep the deploy job behind environment approval either way.
+5. Use the WordPress.org SVN-specific password, not the normal WordPress.org account password.
+
+### Partial failure recovery
+
+The workflow deploys to WordPress.org SVN before creating the GitHub Release so WordPress.org is updated before GitHub advertises the release. If SVN deployment succeeds but GitHub Release creation fails, do not re-tag or rewrite history. Re-run the failed workflow job if possible, or manually create the GitHub Release from the existing trusted tag and validated release notes.
+
+If GitHub Release creation somehow succeeds while WordPress.org deployment does not, treat the release as partially published: fix the SVN deployment issue, re-run the protected publish job when safe, or publish a follow-up patch release if the failed state could affect users.
 
 ## WordPress.org guideline governance
 

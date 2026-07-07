@@ -13,7 +13,7 @@ This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag
 | `schedule` or `workflow_dispatch` | `.github/workflows/compatibility-qa.yml` | Runs `6 - Compatibility QA` against the primary and floating-latest Docker stacks. |
 | `push` to `main` or `develop` | Static, unit, and Docker QA workflows | Re-runs the appropriate numbered checks after merge. |
 | `workflow_dispatch` | Static, unit, Docker, or release workflows | Runs the selected QA layer on demand. |
-| `push` tag `v*` | `.github/workflows/release.yml` | Runs `5 - Release Package QA`, including contract and transport Docker QA, then publishes a GitHub release. |
+| `push` tag `v*` | `.github/workflows/release.yml` | Runs release validation and `5 - Release Package QA`, waits for protected `wordpress-org` approval, deploys to WordPress.org SVN, then publishes a GitHub release. |
 
 ## Workflow details
 
@@ -57,7 +57,15 @@ This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag
 3. Verify plugin release notes exist in `readme.txt` for the tagged version.
 4. Run `scripts/release-qa.sh` to run contract and transport Docker QA, build the plugin ZIP, validate required/forbidden contents, and run WordPress Plugin Check against the built package.
 5. Fail if a release for the same tag already exists.
-6. Publish release with notes from `readme.txt`.
+6. Wait for approval in the protected `wordpress-org` GitHub Environment.
+7. Deploy `build/webmastery-site-toolkit-for-mcp` to WordPress.org SVN with `SLUG=webmastery-site-toolkit-for-mcp` and SVN tag `X.Y.Z`.
+8. Publish the GitHub release with the built ZIP and notes from `readme.txt`.
+
+**WordPress.org deployment**
+- The SVN deploy step uses `10up/action-wordpress-plugin-deploy` pinned to an immutable commit.
+- `SVN_USERNAME` and `SVN_PASSWORD` are read from GitHub Actions secrets. Prefer `wordpress-org` environment secrets; repository-level secrets can work as a fallback when the job is still environment-gated.
+- The workflow deploys code only. WordPress.org listing assets are intentionally deferred until a `.wordpress-org/` asset directory is added and reviewed.
+- WordPress.org SVN is production. Use release package QA, compatibility QA, and staging WordPress installs for test coverage rather than a separate WordPress.org test SVN.
 
 ## Issue and PR process
 
