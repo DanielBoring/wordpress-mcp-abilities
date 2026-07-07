@@ -8,6 +8,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Added
 
+- Added WordPress.org plugin directory branding assets (icon and banner PNGs in `.wordpress-org/`) for the plugin-deploy action to sync to the SVN assets section.
 - Added protected WordPress.org SVN deployment to the tag-based release workflow, including pinned action usage, GitHub Actions secret guidance, SemVer/SVN tag policy, and full release documentation coverage.
 - Added CI/CD, security, and release strategy guides with official GitHub and WordPress references for maintainers operating the approved WordPress.org plugin.
 - Added E2E manifest fixtures and missing-path assertions for permission hardening coverage, including filtered private/trash list results and sensitive identity-field absence checks.
@@ -28,6 +29,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Changed
 
+- Updated README.md to lead with the 70+ ability count and supported MCP clients, and to make the WordPress.org search-and-install flow the primary installation path while moving the GitHub release ZIP and clone steps into a manual/development install note.
 - Expanded repo governance documentation so the official WordPress.org Detailed Plugin Guidelines are explicitly mapped to QA release readiness, security/privacy review, release strategy, contributor guidance, and PR review.
 - Numbered the GitHub Actions workflow and job display names with `# -` prefixes so required checks align with the QA strategy guide.
 - Matured the QA strategy for the approved WordPress.org plugin by documenting security-sensitive ability coverage, compatibility triage, stricter debug-log expectations, and release transport coverage.
