@@ -25,5 +25,6 @@
 - [ ] Local QA checked with `composer qa` and the relevant Docker/release QA wrapper from `docs/qa-strategy.md`, or the missing tool/blocker is documented above
 - [ ] Compatibility QA was considered for release candidates, dependency-sensitive changes, or WordPress/PHP support changes
 - [ ] CI/CD, security, or release process changes update the matching strategy document when policy changes
+- [ ] Release-impacting changes account for GitHub tag `vX.Y.Z`, WordPress.org SVN tag `X.Y.Z`, protected `wordpress-org` deployment approval, and package/readme/version alignment
 - [ ] WordPress.org Detailed Plugin Guidelines were considered for public-facing or release-impacting changes such as naming, readme text, privacy/external calls, licensing, bundled assets, and release packaging; see `CONTRIBUTING.md`, `docs/security-strategy.md`, and `docs/release-strategy.md`
 - [ ] E2E QA is passing, or failures are unrelated and explained above

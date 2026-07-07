@@ -67,7 +67,7 @@ Current runtime enforcement:
 - Prefer GitHub Actions `GITHUB_TOKEN` with explicit job-level `permissions`.
 - Do not expose secrets to workflows running untrusted PR code.
 - Rotate any secret that appears in logs or repository history.
-- Keep release credentials outside repository files; use GitHub secrets/environments if future automation requires them.
+- Keep release credentials outside repository files. WordPress.org SVN deployment uses GitHub Actions secrets named `SVN_USERNAME` and `SVN_PASSWORD`; prefer storing them as protected `wordpress-org` environment secrets so they are only available after approval. Repository-level GitHub Secrets can work as a fallback, but the publish job must remain protected by the environment gate.
 
 ## WordPress.org guideline security and privacy expectations
 

@@ -39,7 +39,7 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 == Installation ==
 
 1. Install and activate the [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin first.
-2. Upload the `webmastery-site-toolkit-for-mcp` folder to `/wp-content/plugins/`, or install the plugin zip from **Plugins > Add New > Upload Plugin**.
+2. Install **Webmastery Site Toolkit for MCP** from **Plugins > Add New** by searching for the plugin name, or upload the plugin zip from **Plugins > Add New > Upload Plugin**.
 3. Activate **Webmastery Site Toolkit for MCP** from the WordPress Plugins screen.
 4. Create a dedicated WordPress user for your MCP client. Use Editor for day-to-day content work.
 5. Create an application password for that user from the WordPress user profile screen.

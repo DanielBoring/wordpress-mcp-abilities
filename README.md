@@ -40,8 +40,8 @@ For release history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Quickstart
 
-1. Install and activate the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin.
-2. Install and activate **Webmastery Site Toolkit for MCP** from the [latest GitHub release](https://github.com/DanielBoring/webmastery-site-toolkit-for-mcp/releases/latest).
+1. Install and activate the [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin.
+2. Install and activate **Webmastery Site Toolkit for MCP** from the WordPress.org Plugin Directory or the [latest GitHub release](https://github.com/DanielBoring/webmastery-site-toolkit-for-mcp/releases/latest).
 3. Create a dedicated WordPress user for the agent. Use **Editor** for normal content work.
 4. Create an application password for that user.
 5. Configure your MCP client with `@automattic/mcp-wordpress-remote`.
@@ -83,14 +83,17 @@ Self-hosted WordPress is required. This works on WordPress installs where custom
 
 ## Install
 
-Install the MCP Adapter first, then install this plugin.
+Install the MCP Adapter first, then install this plugin from **WP Admin > Plugins > Add New** by searching for **Webmastery Site Toolkit for MCP**.
+
+If you need to install a GitHub release ZIP manually, download the latest release package and upload it in **WP Admin > Plugins > Add New > Upload Plugin**.
+
+For local development, clone the repository into your WordPress plugins directory:
 
 ```bash
 git clone https://github.com/DanielBoring/webmastery-site-toolkit-for-mcp.git webmastery-site-toolkit-for-mcp
-zip -r webmastery-site-toolkit-for-mcp.zip webmastery-site-toolkit-for-mcp --exclude='webmastery-site-toolkit-for-mcp/.git/*'
 ```
 
-Upload `webmastery-site-toolkit-for-mcp.zip` in **WP Admin > Plugins > Add New > Upload Plugin**, then activate it.
+Then activate **Webmastery Site Toolkit for MCP** from the WordPress Plugins screen.
 
 ## Connect Your MCP Client
 

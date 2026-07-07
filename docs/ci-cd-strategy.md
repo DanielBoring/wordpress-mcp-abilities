@@ -18,7 +18,7 @@ This repository uses GitHub Actions as the automation layer for pull request che
 | `2 - Unit Tests` | `pull_request`, `push`, `workflow_dispatch` | Fast PHPUnit helper tests. |
 | `3-4 - Docker QA` | `pull_request`, `push`, `workflow_dispatch` | Runtime-impact detection, Ability Contract QA, Full MCP E2E QA, failure artifacts, and PR comment summaries. |
 | `5 - Release Package QA` | release-impacting `pull_request`, `workflow_dispatch` | Contract + transport Docker QA, package validation, and WordPress Plugin Check without publishing. |
-| `5 - Release` | tag push `v*` | Validates release inputs, runs Release Package QA, and publishes the GitHub release. |
+| `5 - Release` | tag push `v*` | Validates release inputs, runs Release Package QA, waits for protected WordPress.org approval, deploys to SVN, and publishes the GitHub release. |
 | `6 - Compatibility QA` | weekly `schedule`, `workflow_dispatch` | Runs Docker QA against primary and floating-latest WordPress/PHP stacks. |
 
 ## Pull request policy
@@ -58,8 +58,22 @@ Use least privilege per job:
 
 - Read-only jobs use `contents: read`.
 - PR comment jobs use `pull-requests: write` and avoid checking out PR-controlled code.
-- Release publishing uses `contents: write` only in the tag release workflow.
-- Secrets should not be needed for PR validation from forks. If future workflows require secrets, use environments and reviewer gates.
+- Release publishing uses `contents: write` only in the protected publish job of the tag release workflow.
+- Secrets should not be needed for PR validation from forks.
+- WordPress.org SVN credentials are GitHub Actions secrets named `SVN_USERNAME` and `SVN_PASSWORD`. Prefer storing them as `wordpress-org` environment secrets so they are unavailable until the protected environment is approved. Repository-level GitHub Secrets can work as a fallback, but the deploy job should still use the protected environment gate.
+
+## Environment gates
+
+The `wordpress-org` GitHub Environment protects the production SVN publish step. Release QA runs before the workflow reaches that environment, so normal validation does not need SVN credentials.
+
+Recommended `wordpress-org` environment settings:
+
+1. Require manual approval before deployment.
+2. Restrict secrets to the environment when possible.
+3. Store the WordPress.org SVN-specific password, not the normal account password.
+4. Treat approval as confirmation that the validated tag should publish to WordPress.org production SVN.
+
+There is no separate WordPress.org test SVN. Use pull request checks, `5 - Release Package QA`, manual compatibility checks, and staging WordPress installs for pre-production confidence.
 
 ## Scheduling policy
 
@@ -92,7 +106,7 @@ PR comments should summarize runtime facts rather than static success claims:
 1. Fix `1 - Static QA` failures first; they are usually syntax, standards, static-analysis, security-policy, dependency, manifest, or whitespace issues.
 2. Fix `2 - Unit Tests` before Docker failures; unit failures often indicate helper contract drift.
 3. For Docker failures, inspect the PR comment and uploaded artifacts.
-4. For release failures, distinguish package metadata/content failures from Plugin Check failures.
+4. For release failures, distinguish package metadata/content failures, Plugin Check failures, protected environment approval issues, SVN deployment failures, and GitHub Release creation failures.
 5. For scheduled compatibility failures, reproduce manually before changing required branch protection.
 
 ## Official references

@@ -18,7 +18,7 @@ Related strategy guides:
 | 2 - Unit Tests | `composer qa:unit` | Small pieces of PHP logic behave correctly without booting WordPress. These tests are the fast safety net for sanitization, response shape, permission helpers, SEO metadata normalization, taxonomy helpers, plugin safety logic, and failure paths. | Every PR and every push to `main`. |
 | 3 - Ability Contract QA | `composer qa:contract` or `bash scripts/e2e-test.sh contract` | WordPress boots in Docker, required plugins load, every registered ability is represented in `tests/e2e/abilities-manifest.json`, manifest cases execute through `wp_get_ability()->execute()`, permission-sensitive cases pass, and the debug log stays clean. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
 | 4 - Full MCP E2E QA | `composer qa:e2e` or `bash scripts/e2e-test.sh e2e` | A real MCP HTTP JSON-RPC session can discover and execute abilities through the MCP Adapter, including Application Password authentication, session setup, tool discovery, editor CRUD, and subscriber denial. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
-| 5 - Release Package QA | `composer qa:release` or `bash scripts/release-qa.sh` | Release metadata is aligned, Ability Contract QA and Full MCP E2E QA pass, the release zip contains only packaged plugin files, and WordPress Plugin Check evaluates the built package instead of the development checkout. | Release PRs, tags, and manual dispatch. |
+| 5 - Release Package QA | `composer qa:release` or `bash scripts/release-qa.sh` | Release metadata is aligned, Ability Contract QA and Full MCP E2E QA pass, the release zip contains only packaged plugin files, and WordPress Plugin Check evaluates the built package instead of the development checkout. This check must pass before the protected WordPress.org SVN deploy job can run. | Release PRs, tags, and manual dispatch. |
 | 6 - Compatibility QA | `.github/workflows/compatibility-qa.yml` | Scheduled/manual Docker QA against the primary stack and a floating-latest PHP/WordPress image catches upstream drift in WordPress, PHP, MCP Adapter, Yoast SEO, SEOPress, and Plugin Check dependencies. | Weekly schedule, manual dispatch, release-candidate investigation, and upstream-breakage triage. |
 
 ## Security QA policy
@@ -164,7 +164,7 @@ Before publishing a WordPress.org-facing release:
 4. Confirm no unexpected WordPress debug-log warnings, notices, deprecations, or errors appear during Docker QA.
 5. Confirm security-sensitive changes have manifest evidence for allowed and denied access.
 6. Review the official [WordPress.org Detailed Plugin Guidelines](https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/) for release-impacting changes, especially licensing, bundled assets, external services, tracking consent, executable remote code, readme content, default WordPress libraries, SVN discipline, version increments, and trademarks.
-7. Run or review the latest `6 - Compatibility QA` result before uploading a release candidate to WordPress.org.
+7. Run or review the latest `6 - Compatibility QA` result before approving WordPress.org SVN deployment.
 8. Document any known Plugin Check warnings, guideline considerations, or unavailable local tooling in the PR.
 
 Plugin Check supports the guideline review, but it does not replace maintainer responsibility for the final WordPress.org package contents and behavior.

@@ -6,12 +6,15 @@ on:
       - 'v*'
 
 jobs:
-  release:
-    name: 5 - Publish Release
+  release-qa:
+    name: 5 - Validate Release
     runs-on: ubuntu-latest
     timeout-minutes: 55
     permissions:
-      contents: write
+      contents: read
+
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
 
     steps:
       - name: Checkout
@@ -27,6 +30,8 @@ jobs:
 
       - name: Validate release inputs
         id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -83,14 +88,77 @@ jobs:
       - name: Run 5 - Release Package QA
         run: bash scripts/release-qa.sh "${{ steps.validate.outputs.version }}"
 
+  publish:
+    name: 5 - Publish Release
+    needs: release-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    environment:
+      name: wordpress-org
+      url: https://wordpress.org/plugins/webmastery-site-toolkit-for-mcp/
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          fetch-depth: 1
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.0'
+          coverage: none
+
+      - name: Prepare release artifacts
+        id: artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.release-qa.outputs.version }}"
+          ZIP_FILE="$(bash scripts/build-release.sh "$VERSION")"
+          NOTES_FILE="build/release-notes-${VERSION}.md"
+          NOTES="$(awk "/^= ${VERSION} =/{found=1; next} found && /^= /{exit} found{print}" readme.txt | sed '/^[[:space:]]*$/d')"
+
+          if [ -z "$NOTES" ]; then
+            echo "No plugin release notes found in readme.txt for version ${VERSION}" >&2
+            exit 1
+          fi
+
+          printf '%s\n' "$NOTES" > "$NOTES_FILE"
+          echo "zip-file=$ZIP_FILE" >> "$GITHUB_OUTPUT"
+          echo "notes-file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify GitHub Release is unpublished
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_TAG="v${{ needs.release-qa.outputs.version }}"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; refusing duplicate publish" >&2
+            exit 1
+          fi
+
+      - name: Deploy to WordPress.org SVN
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: webmastery-site-toolkit-for-mcp
+          VERSION: ${{ needs.release-qa.outputs.version }}
+          BUILD_DIR: build/webmastery-site-toolkit-for-mcp
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ steps.validate.outputs.version }}"
+          VERSION="${{ needs.release-qa.outputs.version }}"
           gh release create "v${VERSION}" \
-            "webmastery-site-toolkit-for-mcp-${VERSION}.zip" \
+            "${{ steps.artifacts.outputs.zip-file }}" \
             --title "v${VERSION}" \
-            --notes-file "${{ steps.validate.outputs.notes-file }}"
+            --notes-file "${{ steps.artifacts.outputs.notes-file }}"
