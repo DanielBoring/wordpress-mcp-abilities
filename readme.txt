@@ -4,7 +4,7 @@ Tags: mcp, ai, automation, content-management, claude
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2.4.1
+Stable tag: 2.5.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://paypal.me/VirtuallyBoring
@@ -91,6 +91,12 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 
 == Changelog ==
 
+= 2.5.0 =
+* Expand targeted content patching to pages and public editor-enabled custom post types with object-level permissions and explicit unsupported-type errors.
+* Refresh the WordPress.org listing to lead with the 70+ permission-aware abilities across 16 areas and supported MCP clients.
+* Add an FAQ entry covering compatible AI clients and MCP hosts.
+* Update the WordPress.org tags to better describe MCP-powered content automation.
+
 = 2.4.1 =
 * Harden permission callbacks and per-object filtering for posts, pages, custom post types, media, SEO score lists, plugin activation/deactivation, and runtime environment details.
 * Remove plugin auto-update status from plugin responses to avoid Plugin Check updater-detection warnings.
@@ -123,6 +129,9 @@ https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/
 * Add block inspection, single-block replacement, and safer partial post body edits.
 
 == Upgrade Notice ==
+
+= 2.5.0 =
+Targeted partial-content patches now support pages and eligible custom post types while preserving object-level edit permissions.
 
 = 2.4.1 =
 Permission hardening reduces low-privilege visibility into private/trash content, runtime versions, and sensitive identity fields. Use Administrator credentials for environment details and plugin management.
