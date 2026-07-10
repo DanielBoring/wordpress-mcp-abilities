@@ -6,6 +6,8 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 
 ## Unreleased
 
+## 2.5.0
+
 ### Added
 
 - Added a readme.txt FAQ entry covering which AI clients and MCP hosts work with the plugin.
