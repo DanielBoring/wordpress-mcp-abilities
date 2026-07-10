@@ -608,6 +608,18 @@ $fixtures['classic_partial_post_id'] = e2e_insert_post(
 	'<p>Classic intro.</p><p>Replace this exact sentence.</p><p>Classic ending.</p>',
 	$author_id
 );
+$fixtures['partial_page_id'] = e2e_insert_post(
+	'page',
+	'MCP E2E Partial Page',
+	'<p>Page intro.</p><p>Replace this page sentence.</p><p>Page ending.</p>',
+	$editor_id
+);
+$fixtures['partial_book_id'] = e2e_insert_post(
+	'mcp_book',
+	'Targeted Content Book Fixture',
+	'<p>Book intro.</p><p>Replace this book sentence.</p><p>Book ending.</p>',
+	$book_manager_id
+);
 $fixtures['block_path_post_id'] = e2e_insert_post(
 	'post',
 	'MCP E2E Block Path Post',

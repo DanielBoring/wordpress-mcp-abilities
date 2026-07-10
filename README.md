@@ -53,7 +53,7 @@ Every ability uses WordPress capability checks. An Editor account can handle day
 | Posts and pages | Create, list, read, update, restore, trash, bulk publish, bulk trash, and patch targeted content with object/status-aware filtering for private, trash, draft, pending, and scheduled content | Author or Editor |
 | Blocks and revisions | Inspect Gutenberg block paths/hashes, replace one block, list revisions, restore a revision | Author or Editor |
 | Post meta | Read, update, and delete safe custom fields; write supported Yoast SEO and SEOPress metadata | Author or Editor |
-| Custom post types | Discover eligible public CPTs and generate list/get/create/update/delete abilities with CPT capability-map and object/status-aware list filtering | CPT capability map |
+| Custom post types | Discover eligible public CPTs, generate list/get/create/update/delete abilities, and patch targeted content for editor-enabled types with CPT capability-map and object/status-aware filtering | CPT capability map |
 | Taxonomy | List, get, create, update, and delete categories and tags | Subscriber to Editor |
 | Comments | List, reply, update, approve, hold, trash, or mark spam | Editor |
 | Media | List, inspect, update, upload public image URLs, set featured images, and delete media | Author or Editor |
