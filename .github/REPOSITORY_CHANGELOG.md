@@ -39,6 +39,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 - Updated E2E runner behavior so local runs can optionally manage Docker Compose startup and cleanup while preserving CI behavior.
 - Updated E2E ability manifest coverage counts and cases for bulk post operation abilities.
 - Updated release, E2E, PHPCS, Composer, and documentation automation references for the Webmastery Site Toolkit for MCP package rename.
+- Fixed the README top-navigation Security link to point to the renamed `## Security Best Practices` heading anchor (`#security-best-practices`).
 
 ## 1.6.0
 

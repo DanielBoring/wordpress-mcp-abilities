@@ -1,5 +1,5 @@
 <h2 align="center">
-  <img width="80%" alt="Webmastery Site Toolkit for MCP" src="assets/Webmastery_Site_Toolkit_Banner.png"><br/>
+  <img  alt="Webmastery Site Toolkit for MCP" src=".wordpress-org/icon-256x256.png"><br/>
   Webmastery Site Toolkit for MCP<br/>
   <sub>Give your AI agent editorial control over WordPress.</sub>
 </h2>
@@ -17,20 +17,15 @@
     </a>
   </h2>
 
-[Quickstart](#quickstart) | [Abilities](#abilities) | [Requirements](#requirements) | [Connect](#connect-your-mcp-client) | [Verify](#verify) | [Security](#security) | [Full docs](https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/)
+[Quickstart](#quickstart) | [Abilities](#abilities) | [Requirements](#requirements) | [Connect](#connect-your-mcp-client) | [Verify](#verify) | [Security](#security-best-practices) | [Full docs](https://www.virtuallyboring.com/webmastery-site-toolkit-for-mcp/)
 
 </div>
 
 **Webmastery Site Toolkit for MCP** is a WordPress plugin that adds **70+ permission-aware abilities across 16 areas** for AI agents and MCP clients. It works with the official [MCP Adapter](https://github.com/WordPress/mcp-adapter): the adapter provides the transport layer, and this plugin registers the WordPress abilities an agent can call. It works with popular MCP clients including Claude, ChatGPT, GitHub Copilot, and Gemini.
 
-Use it to let an agent draft or update content, manage media and comments, inspect site health, review SEO metadata, audit plugins and users, and gather safe site context without handing your personal admin account to the agent.
+Use it to let an agent draft or update content, manage media and comments, inspect site health, review SEO metadata, audit plugins and users, and gather safe site context without having to login to wp-admin.
 
 For release history, see [CHANGELOG.md](CHANGELOG.md).
-
-<table>
-<tr><td align="center"><strong>Without this plugin</strong><br/><img src="assets/before.png" alt="Before"></td>
-<td align="center"><strong>With this plugin</strong><br/><img src="assets/after.png" alt="After"></td></tr>
-</table>
 
 ## Who This Is For
 
@@ -42,7 +37,7 @@ For release history, see [CHANGELOG.md](CHANGELOG.md).
 
 1. Install and activate the [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin.
 2. Install **Webmastery Site Toolkit for MCP** from **WP Admin → Plugins → Add New** (search for the plugin name), then activate it.
-3. Create a dedicated WordPress user for the agent. Use **Editor** for normal content work.
+3. Create a dedicated WordPress user for the agent. Use **Editor** permissions for normal content work.
 4. Create an application password for that user.
 5. Configure your MCP client with `@automattic/mcp-wordpress-remote`.
 6. Ask the client to call `mcp-adapter-discover-abilities`.
@@ -143,7 +138,7 @@ Try a few safe checks:
 
 If discovery shows fewer abilities than this repo documents, the connected WordPress site is running an older deployed copy of the plugin. Update the site plugin, then run discovery again.
 
-## Security
+## Security Best Practices
 
 - Use a dedicated service account, not your personal account.
 - Use **Editor** for routine content work and a separate **Administrator** account only for sensitive audits or plugin management.
