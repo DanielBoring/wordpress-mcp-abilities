@@ -53,7 +53,7 @@ jobs:
 
           printf '%s\n' "$CHANGED_FILES"
 
-          if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(\.github/workflows/|docker-compose\.yml|scripts/|tests/|includes/|webmastery-site-toolkit-for-mcp\.php|readme\.txt|composer\.(json|lock)|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|assets/)'; then
+          if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(\.github/compatibility-versions\.json|\.github/workflows/|docker-compose\.yml|scripts/|tests/|includes/|webmastery-site-toolkit-for-mcp\.php|readme\.txt|composer\.(json|lock)|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|assets/)'; then
             echo "should-run=true" >> "$GITHUB_OUTPUT"
           else
             echo "should-run=false" >> "$GITHUB_OUTPUT"
@@ -123,7 +123,7 @@ jobs:
           wordpress_version="$(docker compose exec -T wordpress wp --allow-root core version 2>/dev/null || echo unknown)"
           php_version="$(docker compose exec -T wordpress php -r 'echo PHP_VERSION;' 2>/dev/null || echo unknown)"
           mysql_version="$(docker compose exec -T mysql mysql --version 2>/dev/null || echo unknown)"
-          mcp_adapter_release="$(grep '^MCP_ADAPTER_ZIP=' scripts/e2e-test.sh | sed -E 's#.*releases/download/([^/]+)/.*#\1#')"
+          mcp_adapter_release="$(jq -r '"v" + .mcp_adapter' .github/compatibility-versions.json)"
           mcp_adapter_version="$(docker compose exec -T wordpress wp --allow-root plugin get mcp-adapter --field=version 2>/dev/null || echo unknown)"
           yoast_version="$(docker compose exec -T wordpress wp --allow-root plugin get wordpress-seo --field=version 2>/dev/null || echo unknown)"
           seopress_version="$(docker compose exec -T wordpress wp --allow-root plugin get wp-seopress --field=version 2>/dev/null || echo unknown)"

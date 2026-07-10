@@ -19,7 +19,7 @@ Related strategy guides:
 | 3 - Ability Contract QA | `composer qa:contract` or `bash scripts/e2e-test.sh contract` | WordPress boots in Docker, required plugins load, every registered ability is represented in `tests/e2e/abilities-manifest.json`, manifest cases execute through `wp_get_ability()->execute()`, permission-sensitive cases pass, and the debug log stays clean. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
 | 4 - Full MCP E2E QA | `composer qa:e2e` or `bash scripts/e2e-test.sh e2e` | A real MCP HTTP JSON-RPC session can discover and execute abilities through the MCP Adapter, including Application Password authentication, session setup, tool discovery, editor CRUD, and subscriber denial. | Runtime PRs, ability PRs, security-sensitive PRs, `main`, releases, and manual dispatch. |
 | 5 - Release Package QA | `composer qa:release` or `bash scripts/release-qa.sh` | Release metadata is aligned, Ability Contract QA and Full MCP E2E QA pass, the release zip contains only packaged plugin files, and WordPress Plugin Check evaluates the built package instead of the development checkout. This check must pass before the protected WordPress.org SVN deploy job can run. | Release PRs, tags, and manual dispatch. |
-| 6 - Compatibility QA | `.github/workflows/compatibility-qa.yml` | Scheduled/manual Docker QA against the primary stack and a floating-latest PHP/WordPress image catches upstream drift in WordPress, PHP, MCP Adapter, Yoast SEO, SEOPress, and Plugin Check dependencies. | Weekly schedule, manual dispatch, release-candidate investigation, and upstream-breakage triage. |
+| 6 - Compatibility QA | `.github/workflows/compatibility-qa.yml` | Scheduled/manual Docker QA discovers official upstream releases, isolates pinned and candidate WordPress/MCP Adapter combinations, and promotes passing versions through a maintainer-reviewed PR while exercising ability contracts, MCP transport, and debug-log cleanliness. | Weekly schedule, manual dispatch after an upstream release, release-candidate investigation, and upstream-breakage triage. |
 
 ## Security QA policy
 
@@ -173,15 +173,20 @@ Plugin Check supports the guideline review, but it does not replace maintainer r
 
 The default PR path should stay stable and reasonably fast. Compatibility QA starts as scheduled/manual coverage because upstream images, plugin versions, and dependency repositories can change independently of a PR.
 
-The current compatibility workflow runs:
+The current compatibility workflow reads `.github/compatibility-versions.json`, discovers the latest stable releases, and runs:
 
-- the primary Docker stack used by default QA
-- a floating-latest WordPress image on a newer PHP runtime
+- WordPress 6.9 on PHP 8.1 with the pinned MCP Adapter baseline
+- the exact pinned WordPress and MCP Adapter baselines
+- the pinned WordPress baseline with the latest stable MCP Adapter
+- the latest stable WordPress release with the pinned MCP Adapter baseline
+- both latest releases together when both changed during the same interval
+
+All lanes pull fresh images, run both Ability Contract QA and Full MCP E2E QA, fail on WordPress debug-log warnings/notices/deprecations/errors, and record resolved dependency versions in the GitHub Actions job summary. After a successful scheduled run, newer versions are proposed in an automated PR that updates the baseline file and the concrete runtime pins. Maintainer approval and merge remain mandatory.
 
 When compatibility failures occur, triage them as:
 
-- **release blocker** when the failure affects the supported primary stack or a supported WordPress/PHP combination
-- **upstream drift** when a floating-latest dependency changed and the plugin needs an adjustment or documented compatibility boundary
+- **release blocker** when the failure affects the supported floor, current WordPress line, or another supported WordPress/PHP combination
+- **upstream drift** when a floating WordPress or latest MCP Adapter dependency changed and the plugin needs an adjustment or documented compatibility boundary
 - **workflow maintenance** when the failure is caused by runner/image/tooling changes unrelated to plugin behavior
 
 ## Environment notes

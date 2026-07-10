@@ -29,6 +29,7 @@ Plugin-facing release notes belong in `CHANGELOG.md`.
 
 ### Changed
 
+- Expanded Compatibility QA to discover official WordPress and MCP Adapter releases, isolate baseline and candidate combinations, record resolved runtime versions, and open a maintainer-reviewed baseline-update PR only after all candidate tests pass.
 - Updated README.md to lead with the 70+ ability count and supported MCP clients, and to make the WordPress.org search-and-install flow the primary installation path while moving the GitHub release ZIP and clone steps into a manual/development install note.
 - Expanded repo governance documentation so the official WordPress.org Detailed Plugin Guidelines are explicitly mapped to QA release readiness, security/privacy review, release strategy, contributor guidance, and PR review.
 - Numbered the GitHub Actions workflow and job display names with `# -` prefixes so required checks align with the QA strategy guide.
