@@ -22,7 +22,7 @@ Core editorial workflows work well with a dedicated Editor service account. Sens
 Highlights:
 
 * Create, update, list, restore, trash, bulk publish, and bulk trash posts and pages.
-* Inspect Gutenberg blocks and patch one targeted block or content section instead of rewriting an entire post.
+* Inspect Gutenberg blocks and patch one targeted block or content section in posts, pages, and eligible custom post types instead of rewriting the full content.
 * Manage categories, tags, comments, media metadata, featured images, and public image URL uploads.
 * Discover eligible public custom post types and use generated CRUD abilities for each one.
 * Read, update, and delete safe post meta, including supported Yoast SEO and SEOPress metadata fields.

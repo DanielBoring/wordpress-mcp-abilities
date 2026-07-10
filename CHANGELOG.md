@@ -14,6 +14,7 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 
 - Updated the readme.txt short description and Description section to lead with the 70+ permission-aware ability count across 16 areas and to note supported MCP clients.
 - Updated the WordPress.org plugin tags to `mcp, ai, automation, content-management, claude`.
+- Expanded targeted content patching to pages and public editor-enabled custom post types while preserving object-level edit permissions and returning an explicit unsupported-type error.
 
 ## 2.4.1
 

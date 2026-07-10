@@ -957,6 +957,52 @@ class Webmastery_MCP_Posts {
 		};
 	}
 
+	private static function get_patch_content_target( $post_id, $content_type = '' ) {
+		$id   = absint( $post_id );
+		$post = get_post( $id );
+
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', 'Content not found.' );
+		}
+
+		$content_type = sanitize_key( $content_type );
+		if ( '' !== $content_type && $post->post_type !== $content_type ) {
+			return new WP_Error( 'content_type_mismatch', 'content_type does not match the requested content ID.' );
+		}
+
+		$post_type_object = get_post_type_object( $post->post_type );
+		$is_builtin       = in_array( $post->post_type, [ 'post', 'page' ], true );
+		$is_eligible_cpt  = $post_type_object
+			&& empty( $post_type_object->_builtin )
+			&& ! empty( $post_type_object->public )
+			&& ! empty( $post_type_object->show_ui );
+
+		if ( ( ! $is_builtin && ! $is_eligible_cpt ) || ! post_type_supports( $post->post_type, 'editor' ) ) {
+			return new WP_Error( 'unsupported_type', 'patch-post-content supports posts, pages, and public editor-enabled custom post types.' );
+		}
+		if ( ! current_user_can( 'edit_post', $id ) ) {
+			return new WP_Error( 'forbidden', 'You do not have permission to patch this content.' );
+		}
+
+		return $post;
+	}
+
+	private static function patch_post_content_permission() {
+		return function ( $input = [] ) {
+			$id   = absint( $input['post_id'] ?? 0 );
+			$post = get_post( $id );
+
+			if ( ! $post ) {
+				return new WP_Error( 'not_found', 'Content not found.' );
+			}
+			if ( ! current_user_can( 'edit_post', $id ) ) {
+				return new WP_Error( 'forbidden', 'You do not have permission to patch this content.' );
+			}
+
+			return true;
+		};
+	}
+
 	private static function normalize_block( $block, $path ) {
 		return [
 			'path'              => $path,
@@ -1314,14 +1360,18 @@ class Webmastery_MCP_Posts {
 	private static function register_patch_post_content() {
 		wp_register_ability( 'webmastery-site-toolkit-for-mcp/patch-post-content', [
 			'label'               => 'Patch Post Content',
-			'description'         => 'Safely update one targeted part of a post body without replacing the full post content.',
+			'description'         => 'Safely update one targeted part of a post, page, or eligible custom post type body without replacing the full content.',
 			'category'            => 'webmastery-site-toolkit-for-mcp',
 			'input_schema'        => [
 				'type'       => 'object',
 				'properties' => [
 					'post_id'               => [
 						'type'        => 'integer',
-						'description' => 'Post ID to patch',
+						'description' => 'Post, page, or custom post type ID to patch.',
+					],
+					'content_type'          => [
+						'type'        => 'string',
+						'description' => 'Optional expected content type slug, such as post, page, or an eligible custom post type.',
 					],
 					'target_type'           => [
 						'type'        => 'string',
@@ -1342,22 +1392,19 @@ class Webmastery_MCP_Posts {
 					],
 					'expected_content_hash' => [
 						'type'        => 'string',
-						'description' => 'Optional sha256 hash of the current post_content; fails if the post changed before patching.',
+						'description' => 'Optional sha256 hash of the current post_content; fails if the content changed before patching.',
 					],
 				],
 				'required'   => [ 'post_id', 'target_type', 'replacement_content' ],
 			],
 			'execute_callback'    => function ( $input ) {
-				$id   = absint( $input['post_id'] );
-				$post = get_post( $id );
+				$post = self::get_patch_content_target( $input['post_id'], $input['content_type'] ?? '' );
 
-				if ( ! $post || 'post' !== $post->post_type ) {
-					return self::error_response( 'not_found', 'Post not found.' );
-				}
-				if ( ! current_user_can( 'edit_post', $id ) ) {
-					return self::error_response( 'forbidden', 'You do not have permission to patch this post.' );
+				if ( is_wp_error( $post ) ) {
+					return self::error_response( $post->get_error_code(), $post->get_error_message() );
 				}
 
+				$id              = $post->ID;
 				$current_content = $post->post_content;
 				$before_hash     = self::content_hash( $current_content );
 
@@ -1416,6 +1463,7 @@ class Webmastery_MCP_Posts {
 					'success' => true,
 					'data'    => [
 						'id'                  => $id,
+						'type'                => $post->post_type,
 						'target'              => $patch['target'],
 						'replaced_blocks'     => $patch['replaced_blocks'],
 						'content_hash_before' => $before_hash,
@@ -1424,7 +1472,7 @@ class Webmastery_MCP_Posts {
 					],
 				];
 			},
-			'permission_callback' => self::object_permission( 'post', 'post_id', 'edit_post' ),
+			'permission_callback' => self::patch_post_content_permission(),
 			'meta'                => [
 				'annotations' => [ 'readonly' => false, 'destructive' => false, 'idempotent' => false ],
 				'mcp'         => [ 'public' => true, 'type' => 'tool' ],
