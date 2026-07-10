@@ -5,6 +5,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
+      - '.github/compatibility-versions.json'
       - '.github/workflows/release.yml'
       - '.github/workflows/release-package-qa.yml'
       - 'docker-compose.yml'

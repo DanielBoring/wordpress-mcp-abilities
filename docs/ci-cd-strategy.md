@@ -19,7 +19,7 @@ This repository uses GitHub Actions as the automation layer for pull request che
 | `3-4 - Docker QA` | `pull_request`, `push`, `workflow_dispatch` | Runtime-impact detection, Ability Contract QA, Full MCP E2E QA, failure artifacts, and PR comment summaries. |
 | `5 - Release Package QA` | release-impacting `pull_request`, `workflow_dispatch` | Contract + transport Docker QA, package validation, and WordPress Plugin Check without publishing. |
 | `5 - Release` | tag push `v*` | Validates release inputs, runs Release Package QA, waits for protected WordPress.org approval, deploys to SVN, and publishes the GitHub release. |
-| `6 - Compatibility QA` | weekly `schedule`, `workflow_dispatch` | Runs Docker QA against primary and floating-latest WordPress/PHP stacks. |
+| `6 - Compatibility QA` | weekly `schedule`, `workflow_dispatch` | Discovers official upstream releases, tests baseline and candidate WordPress/MCP Adapter combinations, and opens a reviewed baseline-update PR after successful scheduled tests. |
 
 ## Pull request policy
 
@@ -79,9 +79,11 @@ There is no separate WordPress.org test SVN. Use pull request checks, `5 - Relea
 
 Scheduled jobs should detect drift that a PR did not cause:
 
-- `6 - Compatibility QA` runs weekly to catch upstream WordPress, PHP, MCP Adapter, Yoast SEO, SEOPress, Plugin Check, and Docker image changes.
+- `6 - Compatibility QA` runs weekly to query the official WordPress version API and latest stable MCP Adapter GitHub release, then catches upstream WordPress, PHP, MCP Adapter, Yoast SEO, SEOPress, Plugin Check, and Docker image changes.
+- Compatibility lanes pull fresh Docker images and record resolved runtime versions in the job summary so failures can be attributed to the support floor, pinned baseline, latest WordPress, latest MCP Adapter, or a combined update.
+- Passing newer versions produce a version-specific pull request that updates concrete pins but never auto-merges. The workflow dispatches the normal QA workflows for the bot branch so required checks still run.
 - Scheduled failures should create maintainer follow-up work only after triage confirms the failure is not transient infrastructure noise.
-- Compatibility failures are release blockers only when they affect the supported primary stack or a supported version combination.
+- Compatibility failures are release blockers only when they affect the supported floor, current WordPress line, or another supported version combination.
 
 ## Artifact and reporting policy
 

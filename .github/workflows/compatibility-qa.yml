@@ -2,30 +2,172 @@ name: 6 - Compatibility QA
 
 on:
   workflow_dispatch:
+    inputs:
+      open_update_pr:
+        description: Open a baseline update PR when newer compatible versions are found
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: '17 9 * * 1'
 
 jobs:
+  discover-versions:
+    name: Discover compatibility versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      baseline-wordpress: ${{ steps.versions.outputs.baseline-wordpress }}
+      baseline-mcp-adapter: ${{ steps.versions.outputs.baseline-mcp-adapter }}
+      latest-wordpress: ${{ steps.versions.outputs.latest-wordpress }}
+      latest-mcp-adapter: ${{ steps.versions.outputs.latest-mcp-adapter }}
+      wordpress-update: ${{ steps.versions.outputs.wordpress-update }}
+      mcp-adapter-update: ${{ steps.versions.outputs.mcp-adapter-update }}
+      update-needed: ${{ steps.versions.outputs.update-needed }}
+      matrix: ${{ steps.versions.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          fetch-depth: 1
+
+      - name: Discover baseline and latest releases
+        id: versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          baseline_wordpress="$(jq -er '.wordpress' .github/compatibility-versions.json)"
+          baseline_mcp_adapter="$(jq -er '.mcp_adapter' .github/compatibility-versions.json)"
+          latest_wordpress="$(
+            curl -fsSL https://api.wordpress.org/core/version-check/1.7/ |
+              jq -er '[.offers[] | select(.response == "upgrade")][0].current'
+          )"
+          latest_mcp_adapter="$(gh api repos/WordPress/mcp-adapter/releases/latest --jq .tag_name)"
+          latest_mcp_adapter="${latest_mcp_adapter#v}"
+
+          if ! [[ "$baseline_wordpress" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ &&
+                  "$latest_wordpress" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ &&
+                  "$baseline_mcp_adapter" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ &&
+                  "$latest_mcp_adapter" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Discovered an invalid compatibility version." >&2
+            exit 1
+          fi
+
+          wordpress_update=false
+          if dpkg --compare-versions "$latest_wordpress" gt "$baseline_wordpress"; then
+            wordpress_update=true
+          elif [ "$latest_wordpress" != "$baseline_wordpress" ]; then
+            echo "Latest WordPress ${latest_wordpress} is older than baseline ${baseline_wordpress}." >&2
+            exit 1
+          fi
+
+          mcp_adapter_update=false
+          if dpkg --compare-versions "$latest_mcp_adapter" gt "$baseline_mcp_adapter"; then
+            mcp_adapter_update=true
+          elif [ "$latest_mcp_adapter" != "$baseline_mcp_adapter" ]; then
+            echo "Latest MCP Adapter ${latest_mcp_adapter} is older than baseline ${baseline_mcp_adapter}." >&2
+            exit 1
+          fi
+
+          update_needed=false
+          if [ "$wordpress_update" = "true" ] || [ "$mcp_adapter_update" = "true" ]; then
+            update_needed=true
+          fi
+
+          matrix="$(
+            jq -cn \
+              --arg baseline_wp "$baseline_wordpress" \
+              --arg baseline_mcp "$baseline_mcp_adapter" \
+              --arg latest_wp "$latest_wordpress" \
+              --arg latest_mcp "$latest_mcp_adapter" \
+              --argjson wordpress_update "$wordpress_update" \
+              --argjson mcp_adapter_update "$mcp_adapter_update" \
+              '{
+                include: [
+                  {
+                    "label": "supported-floor",
+                    "wordpress-image": "wordpress:6.9-php8.1-apache",
+                    "mysql-image": "mysql:8.0.36",
+                    "mcp-adapter-zip": ("https://github.com/WordPress/mcp-adapter/releases/download/v" + $baseline_mcp + "/mcp-adapter.zip"),
+                    "dependency-policy": "WordPress support floor with the pinned MCP Adapter baseline"
+                  },
+                  {
+                    "label": "current-baseline",
+                    "wordpress-image": ("wordpress:" + $baseline_wp + "-php8.2-apache"),
+                    "mysql-image": "mysql:8.0.36",
+                    "mcp-adapter-zip": ("https://github.com/WordPress/mcp-adapter/releases/download/v" + $baseline_mcp + "/mcp-adapter.zip"),
+                    "dependency-policy": "Pinned WordPress and MCP Adapter baselines"
+                  },
+                  {
+                    "label": "latest-mcp-adapter",
+                    "wordpress-image": ("wordpress:" + $baseline_wp + "-php8.2-apache"),
+                    "mysql-image": "mysql:8.0.36",
+                    "mcp-adapter-zip": ("https://github.com/WordPress/mcp-adapter/releases/download/v" + $latest_mcp + "/mcp-adapter.zip"),
+                    "dependency-policy": "Pinned WordPress baseline with the latest MCP Adapter release"
+                  },
+                  {
+                    "label": "latest-wordpress",
+                    "wordpress-image": ("wordpress:" + $latest_wp + "-php8.2-apache"),
+                    "mysql-image": "mysql:8.0.36",
+                    "mcp-adapter-zip": ("https://github.com/WordPress/mcp-adapter/releases/download/v" + $baseline_mcp + "/mcp-adapter.zip"),
+                    "dependency-policy": "Latest WordPress release with the pinned MCP Adapter baseline"
+                  }
+                ]
+              }
+              | if $wordpress_update and $mcp_adapter_update then
+                  .include += [
+                    {
+                      "label": "combined-latest",
+                      "wordpress-image": ("wordpress:" + $latest_wp + "-php8.2-apache"),
+                      "mysql-image": "mysql:8.0.36",
+                      "mcp-adapter-zip": ("https://github.com/WordPress/mcp-adapter/releases/download/v" + $latest_mcp + "/mcp-adapter.zip"),
+                      "dependency-policy": "Combined latest WordPress and MCP Adapter releases"
+                    }
+                  ]
+                else
+                  .
+                end'
+          )"
+
+          {
+            echo "baseline-wordpress=${baseline_wordpress}"
+            echo "baseline-mcp-adapter=${baseline_mcp_adapter}"
+            echo "latest-wordpress=${latest_wordpress}"
+            echo "latest-mcp-adapter=${latest_mcp_adapter}"
+            echo "wordpress-update=${wordpress_update}"
+            echo "mcp-adapter-update=${mcp_adapter_update}"
+            echo "update-needed=${update_needed}"
+            echo "matrix=${matrix}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Compatibility version discovery"
+            echo
+            echo "| Dependency | Baseline | Latest | Update found |"
+            echo "| --- | --- | --- | --- |"
+            echo "| WordPress | \`${baseline_wordpress}\` | \`${latest_wordpress}\` | \`${wordpress_update}\` |"
+            echo "| MCP Adapter | \`${baseline_mcp_adapter}\` | \`${latest_mcp_adapter}\` | \`${mcp_adapter_update}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   compatibility-qa:
     name: 6 - Compatibility QA (${{ matrix.label }})
+    needs: discover-versions
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - label: primary
-            wordpress-image: wordpress:7.0-php8.2-apache
-            mysql-image: mysql:8.0.36
-          - label: floating-latest-php
-            wordpress-image: wordpress:php8.3-apache
-            mysql-image: mysql:8.0.36
+      matrix: ${{ fromJSON(needs.discover-versions.outputs.matrix) }}
     permissions:
       contents: read
     env:
       COMPOSE_PROJECT_NAME: webmastery-site-toolkit-for-mcp-compat-${{ matrix.label }}-${{ github.run_id }}
       MYSQL_IMAGE: ${{ matrix.mysql-image }}
       MYSQL_PORT: 0
+      MCP_ADAPTER_ZIP: ${{ matrix.mcp-adapter-zip }}
       WORDPRESS_IMAGE: ${{ matrix.wordpress-image }}
       WORDPRESS_PORT: 0
 
@@ -35,11 +177,42 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Pull compatibility images
+        run: docker compose pull
+
       - name: Run compatibility Docker QA
         env:
           E2E_MANAGE_COMPOSE: 1
           E2E_KEEP_COMPOSE: 1
         run: bash scripts/e2e-test.sh all
+
+      - name: Record tested runtime
+        if: always()
+        shell: bash
+        env:
+          DEPENDENCY_POLICY: ${{ matrix.dependency-policy }}
+        run: |
+          wordpress_version="$(docker compose exec -T wordpress wp --allow-root core version 2>/dev/null || echo unavailable)"
+          php_version="$(docker compose exec -T wordpress php -r 'echo PHP_VERSION;' 2>/dev/null || echo unavailable)"
+          mysql_version="$(docker compose exec -T mysql mysql --version 2>/dev/null || echo unavailable)"
+          mcp_adapter_version="$(docker compose exec -T wordpress wp --allow-root plugin get mcp-adapter --field=version 2>/dev/null || echo unavailable)"
+          plugin_version="$(docker compose exec -T wordpress wp --allow-root plugin get webmastery-site-toolkit-for-mcp --field=version 2>/dev/null || echo unavailable)"
+          {
+            echo "## Compatibility runtime: ${{ matrix.label }}"
+            echo
+            echo "${DEPENDENCY_POLICY}"
+            echo
+            echo "| Dependency | Tested value |"
+            echo "| --- | --- |"
+            echo "| WordPress image | \`${WORDPRESS_IMAGE}\` |"
+            echo "| WordPress | \`${wordpress_version}\` |"
+            echo "| PHP | \`${php_version}\` |"
+            echo "| MySQL image | \`${MYSQL_IMAGE}\` |"
+            echo "| MySQL | \`${mysql_version}\` |"
+            echo "| MCP Adapter source | \`${MCP_ADAPTER_ZIP}\` |"
+            echo "| MCP Adapter | \`${mcp_adapter_version}\` |"
+            echo "| Webmastery Site Toolkit for MCP | \`${plugin_version}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Collect failure artifacts
         if: failure()
@@ -60,3 +233,128 @@ jobs:
           name: compatibility-failure-artifacts-${{ matrix.label }}
           path: e2e-artifacts/
           if-no-files-found: ignore
+
+  open-update-pr:
+    name: Open compatibility baseline PR
+    needs: [discover-versions, compatibility-qa]
+    if: >-
+      needs.compatibility-qa.result == 'success' &&
+      needs.discover-versions.outputs.update-needed == 'true' &&
+      (github.event_name == 'schedule' || github.event.inputs.open_update_pr == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Update baselines and open pull request
+        id: promotion
+        env:
+          BASELINE_MCP_ADAPTER: ${{ needs.discover-versions.outputs.baseline-mcp-adapter }}
+          BASELINE_WORDPRESS: ${{ needs.discover-versions.outputs.baseline-wordpress }}
+          GH_TOKEN: ${{ github.token }}
+          LATEST_MCP_ADAPTER: ${{ needs.discover-versions.outputs.latest-mcp-adapter }}
+          LATEST_WORDPRESS: ${{ needs.discover-versions.outputs.latest-wordpress }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_slug="wp-${LATEST_WORDPRESS}-mcp-${LATEST_MCP_ADAPTER}"
+          branch="automation/compatibility-${version_slug//./-}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+          existing_pr="$(
+            gh pr list \
+              --state all \
+              --head "${branch}" \
+              --json state,url \
+              --jq '.[0] // {}'
+          )"
+          existing_pr_state="$(jq -r '.state // ""' <<< "$existing_pr")"
+          existing_pr_url="$(jq -r '.url // ""' <<< "$existing_pr")"
+          if [ "$existing_pr_state" = "OPEN" ]; then
+            echo "Reusing open compatibility update PR: ${existing_pr_url}"
+            echo "pr-ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -n "$existing_pr_state" ]; then
+            echo "A ${existing_pr_state,,} compatibility PR already exists for these versions: ${existing_pr_url}"
+            echo "pr-ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            branch_wordpress="$(
+              git show "origin/${branch}:.github/compatibility-versions.json" |
+                jq -er '.wordpress'
+            )"
+            branch_mcp_adapter="$(
+              git show "origin/${branch}:.github/compatibility-versions.json" |
+                jq -er '.mcp_adapter'
+            )"
+            if [ "$branch_wordpress" != "$LATEST_WORDPRESS" ] ||
+               [ "$branch_mcp_adapter" != "$LATEST_MCP_ADAPTER" ]; then
+              echo "Remote branch ${branch} does not contain the expected compatibility baselines." >&2
+              exit 1
+            fi
+            echo "Reusing automation branch ${branch} after an earlier PR creation failure."
+          else
+            php scripts/update-compatibility-baselines.php \
+              --wordpress="$LATEST_WORDPRESS" \
+              --mcp-adapter="$LATEST_MCP_ADAPTER"
+            git diff --check
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git switch -c "$branch"
+            git add \
+              .github/compatibility-versions.json \
+              docker-compose.yml \
+              scripts/e2e-test.sh
+            git commit \
+              -m "Update compatibility baselines" \
+              -m "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>"
+            git push --set-upstream origin "$branch"
+          fi
+
+          gh pr create \
+            --base "${{ github.event.repository.default_branch }}" \
+            --head "$branch" \
+            --title "Update compatibility baselines to WordPress ${LATEST_WORDPRESS} and MCP Adapter ${LATEST_MCP_ADAPTER}" \
+            --body "$(cat <<EOF
+          ## Compatibility baseline update
+
+          The scheduled compatibility matrix passed before creating this pull request.
+
+          | Dependency | Previous baseline | Proposed baseline |
+          | --- | --- | --- |
+          | WordPress | \`${BASELINE_WORDPRESS}\` | \`${LATEST_WORDPRESS}\` |
+          | MCP Adapter | \`${BASELINE_MCP_ADAPTER}\` | \`${LATEST_MCP_ADAPTER}\` |
+
+          - Compatibility run: ${RUN_URL}
+          - This pull request requires maintainer review and is never auto-merged.
+          EOF
+          )"
+
+          echo "pr-ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch pull request checks
+        if: steps.promotion.outputs.pr-ready == 'true'
+        env:
+          BRANCH: ${{ steps.promotion.outputs.branch }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run coding-standards.yml --ref "$BRANCH"
+          gh workflow run unit-tests.yml --ref "$BRANCH"
+          gh workflow run e2e-qa.yml --ref "$BRANCH"
+          gh workflow run release-package-qa.yml --ref "$BRANCH"

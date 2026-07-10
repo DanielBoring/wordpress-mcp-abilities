@@ -10,7 +10,7 @@ This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag
 | `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/unit-tests.yml` | Runs `2 - Unit Tests` on every PR. |
 | `pull_request` (`opened`, `synchronize`, `reopened`) | `.github/workflows/e2e-qa.yml` | Detects runtime-impacting files, then runs `3 - Ability Contract QA` and `4 - Full MCP E2E QA` when in scope. |
 | release-impacting `pull_request` or `workflow_dispatch` | `.github/workflows/release-package-qa.yml` | Runs `5 - Release Package QA` without publishing a GitHub release. |
-| `schedule` or `workflow_dispatch` | `.github/workflows/compatibility-qa.yml` | Runs `6 - Compatibility QA` against the primary and floating-latest Docker stacks. |
+| `schedule` or `workflow_dispatch` | `.github/workflows/compatibility-qa.yml` | Discovers current upstream versions, runs `6 - Compatibility QA` against baseline and candidate combinations, and opens a reviewed baseline-update PR after successful scheduled candidate tests. |
 | `push` to `main` or `develop` | Static, unit, and Docker QA workflows | Re-runs the appropriate numbered checks after merge. |
 | `workflow_dispatch` | Static, unit, Docker, or release workflows | Runs the selected QA layer on demand. |
 | `push` tag `v*` | `.github/workflows/release.yml` | Runs release validation and `5 - Release Package QA`, waits for protected `wordpress-org` approval, deploys to WordPress.org SVN, then publishes a GitHub release. |
@@ -48,6 +48,20 @@ This repository uses GitHub Actions for layered WordPress.org plugin QA plus tag
 - PR commenting is isolated to a dedicated job with comment-only write scope and no repository checkout.
 - Actions are pinned to immutable SHAs.
 - Static QA blocks risky `permission_callback => '__return_true'` ability registrations unless they are explicitly reviewed and allow-listed.
+
+### Compatibility QA (`compatibility-qa.yml`)
+
+The weekly/manual compatibility matrix reads pinned versions from `.github/compatibility-versions.json`, queries the official WordPress version API and the latest stable MCP Adapter GitHub release, then isolates the main upstream change surfaces:
+
+- WordPress 6.9 and PHP 8.1 with the pinned MCP Adapter baseline near the plugin support floor
+- the exact pinned WordPress and MCP Adapter baselines
+- the pinned WordPress baseline with the latest stable MCP Adapter release
+- the latest stable WordPress release with the pinned MCP Adapter baseline
+- a combined-latest lane only when both upstream projects release newer versions in the same weekly interval
+
+Each lane pulls fresh Docker images, runs Ability Contract QA plus Full MCP E2E QA, rejects WordPress debug-log warnings/notices/deprecations/errors, and records the resolved WordPress, PHP, MySQL, MCP Adapter, and plugin versions in the job summary. A failure therefore identifies whether the regression is at the support floor, pinned baseline, latest WordPress, latest Adapter, or combined candidate.
+
+When one or both latest versions are newer than the pinned baselines and every compatibility lane passes, the scheduled workflow runs `scripts/update-compatibility-baselines.php` and opens a version-specific pull request. The PR updates `.github/compatibility-versions.json`, the default WordPress Docker image, and the pinned MCP Adapter ZIP. It is never auto-merged. The workflow explicitly dispatches Static QA, Unit Tests, Docker QA, and Release Package QA for the bot-created branch because events created with `GITHUB_TOKEN` do not recursively trigger workflows.
 
 ### Release (`release.yml`)
 
@@ -88,4 +102,4 @@ The E2E bootstrap installs and activates Yoast SEO and SEOPress from WordPress.o
 
 Require `1 - Static QA` and `2 - Unit Tests` before every merge. Require `3 - Ability Contract QA` and `4 - Full MCP E2E QA` before merging runtime-impacting PRs.
 
-Keep `6 - Compatibility QA` scheduled/manual until the matrix is stable enough to promote selected jobs to branch protection.
+Keep `6 - Compatibility QA` scheduled/manual until the matrix is stable enough to promote selected jobs to branch protection. Manual dispatch tests versions without opening a PR unless `open_update_pr` is selected.
