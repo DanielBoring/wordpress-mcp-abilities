@@ -6,6 +6,10 @@ Repository, CI, contributor, and GitHub platform changes are tracked separately 
 
 ## Unreleased
 
+### Added
+
+- Added read-only Google Site Kit compatibility abilities for setup and authentication status, module state, current-user permissions, and same-site PageSpeed summaries, with Site Kit-native permission enforcement and sensitive upstream fields removed.
+
 ## 2.5.0
 
 ### Added

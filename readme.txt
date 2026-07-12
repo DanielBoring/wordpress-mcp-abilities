@@ -15,7 +15,7 @@ Donate link: https://paypal.me/VirtuallyBoring
 
 Webmastery Site Toolkit for MCP adds **70+ permission-aware abilities across 16 areas** that AI agents and MCP clients can call through the official [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) plugin. It works with popular MCP clients including Claude, ChatGPT, GitHub Copilot, and Gemini.
 
-The MCP Adapter provides the transport layer. This plugin provides the site-management vocabulary: posts, pages, media, comments, taxonomy, custom post types, post meta, content hygiene, SEO checks, public webmaster verification, site info, health, security, users, plugins, database, performance, and backup status.
+The MCP Adapter provides the transport layer. This plugin provides the site-management vocabulary: posts, pages, media, comments, taxonomy, custom post types, post meta, content hygiene, SEO checks, public webmaster verification, Google Site Kit diagnostics, site info, health, security, users, plugins, database, performance, and backup status.
 
 Core editorial workflows work well with a dedicated Editor service account. Sensitive workflows such as plugin management, user auditing, site health, database health, backup status, performance status, and security audits require a separate Administrator service account.
 
@@ -30,6 +30,7 @@ Highlights:
 * Inspect safe site and current-user context, with runtime environment details reserved for Administrator accounts.
 * Audit plugins, administrator accounts, backups, performance settings, database bloat, site health, and security posture.
 * Analyze SEO metadata and public Google/Bing webmaster verification proof.
+* Inspect Google Site Kit setup, modules, current-user permissions, and same-site PageSpeed summaries without exposing OAuth credentials or changing Site Kit settings.
 
 All abilities enforce WordPress capability checks. If the connected account cannot perform the equivalent WordPress action, the ability fails instead of bypassing WordPress permissions. List abilities for posts, pages, custom post types, media, and SEO scores also filter each returned object before exposing full details, so private, trashed, draft, pending, and scheduled content follows WordPress object/status permissions.
 
@@ -73,6 +74,12 @@ A dedicated account limits the agent to the role you choose, makes activity easi
 = Do I need Yoast SEO or SEOPress? =
 
 No. Structural SEO checks still work without either plugin. Yoast-specific metadata and score abilities require Yoast SEO. SEOPress-specific metadata inspection and writes require SEOPress.
+
+= Do I need Google Site Kit? =
+
+Only for the optional Site Kit status, module, permission, and PageSpeed abilities. The integration is a read-only compatibility adapter over Site Kit's internal REST routes, which Google does not publish as a supported third-party API. It checks route availability at runtime and preserves Site Kit's own setup, dashboard-sharing, and datapoint permissions.
+
+PageSpeed requests are limited to URLs on the current site and are processed by Google's PageSpeed service through Site Kit. Responses omit OAuth scopes and proxy details, module owner identities, screenshots, third-party entity lists, and full Lighthouse payloads.
 
 = Are write operations safe? =
 
